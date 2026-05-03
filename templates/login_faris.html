@@ -1,0 +1,21 @@
+{% extends 'base_faris.html' %}
+{% block title %}Login Faris{% endblock %}
+{% block content %}
+<div class="auth-box">
+    <h2><i class="fa-solid fa-right-to-bracket"></i> Login</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label><i class="fa-solid fa-envelope"></i> Email</label>
+            <input type="email" name="email_faris" placeholder="Masukkan email kamu" required>
+        </div>
+        <div class="form-group">
+            <label><i class="fa-solid fa-lock"></i> Password</label>
+            <input type="password" name="password_faris" placeholder="Masukkan password" required>
+        </div>
+        <button type="submit" class="btn-submit">
+            <i class="fa-solid fa-right-to-bracket"></i> Login
+        </button>
+    </form>
+    <p class="auth-link">Belum punya akun? <a href="{{ url_for('register_faris') }}">Daftar sekarang</a></p>
+</div>
+{% endblock %}

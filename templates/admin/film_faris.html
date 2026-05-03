@@ -1,0 +1,54 @@
+{% extends 'base_faris.html' %}
+{% block title %}Kelola Film{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>🎬 Data Film</h2>
+    <a href="{{ url_for('admin_tambah_film_faris') }}" class="btn-submit"
+        style="width:auto; padding:8px 20px; font-size:13px; display:inline-block; text-decoration:none;">
+        + Tambah Film
+    </a>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>No</th>
+            <th>Judul</th>
+            <th>Genre</th>
+            <th>Durasi</th>
+            <th>Rating</th>
+            <th>Status</th>
+            <th>Aksi</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for f_faris in films_faris %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ f_faris['judul_faris'] }}</td>
+            <td>{{ f_faris['genre_faris'] }}</td>
+            <td>{{ f_faris['durasi_faris'] }} menit</td>
+            <td>{{ f_faris['rating_faris'] }}</td>
+            <td>
+                <span class="badge {{ 'badge-success' if f_faris['status_faris'] == 'tayang' else 'badge-danger' }}">
+                    {{ f_faris['status_faris'] }}
+                </span>
+            </td>
+            <td style="display:flex; gap:6px;">
+                <a href="{{ url_for('admin_edit_film_faris', id_film_faris=f_faris['id_film_faris']) }}"
+                    class="btn-kecil btn-info">Edit</a>
+                <a href="{{ url_for('admin_hapus_film_faris', id_film_faris=f_faris['id_film_faris']) }}"
+                    class="btn-kecil btn-danger" onclick="return confirm('Yakin hapus film ini?')">
+                    Hapus
+                </a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="7" style="text-align:center; color:#aaa; padding:30px;">Belum ada data film.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

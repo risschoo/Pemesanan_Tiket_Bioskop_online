@@ -1,0 +1,108 @@
+{% extends 'base_faris.html' %}
+{% block title %}{{ film_faris['judul_faris'] }}{% endblock %}
+
+{% block content %}
+<div class="detail-film">
+    <div class="detail-poster">
+        {% if film_faris['poster_faris'] and (film_faris['poster_faris'].startswith('http://') or
+        film_faris['poster_faris'].startswith('https://')) %}
+        <img src="{{ film_faris['poster_faris'] }}" alt="{{ film_faris['judul_faris'] }}"
+            onerror="this.src='https://placehold.co/220x330/1a1a2e/ffffff?text=No+Poster'">
+        {% else %}
+        <img src="{{ url_for('static', filename='img/' + (film_faris['poster_faris'] or 'default.jpg')) }}"
+            alt="{{ film_faris['judul_faris'] }}"
+            onerror="this.src='https://placehold.co/220x330/1a1a2e/ffffff?text=No+Poster'">
+        {% endif %}
+    </div>
+    <div class="detail-info">
+        <h1>{{ film_faris['judul_faris'] }}</h1>
+        <table class="info-table">
+            <tr>
+                <td><i class="fa-solid fa-masks-theater"></i> Genre</td>
+                <td>: {{ film_faris['genre_faris'] }}</td>
+            </tr>
+            <tr>
+                <td><i class="fa-regular fa-clock"></i> Durasi</td>
+                <td>: {{ film_faris['durasi_faris'] }} menit</td>
+            </tr>
+            <tr>
+                <td><i class="fa-solid fa-star"></i> Rating</td>
+                <td>: <span class="badge badge-danger">{{ film_faris['rating_faris'] }}</span></td>
+            </tr>
+        </table>
+        <p class="sinopsis">{{ film_faris['sinopsis_faris'] }}</p>
+
+        <h3 style="margin-top:22px; margin-bottom:12px; font-size:16px;">
+            <i class="fa-regular fa-calendar-days"></i> Pilih Jadwal Tayang
+        </h3>
+
+        {% if jadwals_faris and jadwals_faris|length > 0 %}
+        <div class="jadwal-list">
+            {% for j_faris in jadwals_faris %}
+            <div class="jadwal-item">
+                <div class="jadwal-info">
+                    <span class="jadwal-tanggal"><i class="fa-regular fa-calendar"></i>
+                        {{ j_faris['tanggal_faris'].strftime('%d %B %Y') }}
+                    </span>
+                    <span class="jadwal-teater"><i class="fa-solid fa-building"></i>
+                        {{ j_faris['nama_teater_faris'] }}
+                    </span>
+                    <span class="jadwal-jam"><i class="fa-regular fa-clock"></i>
+                        {{ j_faris['jam_tayang_faris'] | format_jam_faris }}
+                    </span>
+
+                    {% if j_faris['status_faris'] == 'penuh' %}
+                    <span class="badge" style="background:#cc0000; color:white; padding:4px 12px; border-radius:20px;">
+                        🔴 Penuh
+                    </span>
+                    {% else %}
+                    <span class="badge" style="background:#28a745; color:white; padding:4px 12px; border-radius:20px;">
+                        🟢 Tersedia
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="jadwal-harga">
+                    {% set hari = j_faris['tanggal_faris'].weekday() %}
+                    {% if hari in [5, 6] %}
+                    <span class="harga-weekend">Rp {{ "{:,.0f}".format(j_faris['harga_weekend_faris']) }}</span>
+                    <span class="badge-weekend">Weekend</span>
+                    {% else %}
+                    <span class="harga-weekday">Rp {{ "{:,.0f}".format(j_faris['harga_weekday_faris']) }}</span>
+                    <span class="badge-weekday">Weekday</span>
+                    {% endif %}
+                </div>
+
+                {% if j_faris['status_faris'] == 'penuh' %}
+                <div class="btn-pilih penuh"
+                    style="background:#cccccc; cursor:not-allowed; opacity:0.6; pointer-events:none;">
+                    <i class="fa-solid fa-ban"></i> Kursi Penuh
+                </div>
+                {% else %}
+                <a href="{{ url_for('pilih_kursi_faris', id_jadwal_faris=j_faris['id_jadwal_faris']) }}"
+                    class="btn-pilih">
+                    <i class="fa-solid fa-couch"></i> Pilih Kursi
+                </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#999; font-size:14px; margin-top:10px;">
+            <i class="fa-solid fa-circle-info"></i> Belum ada jadwal untuk film ini.
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+{% if film_faris['trailer_url_faris'] %}
+<div class="trailer-section">
+    <h3><i class="fa-brands fa-youtube" style="color:#cc0000;"></i> Trailer Resmi</h3>
+    <div class="trailer-wrapper">
+        <iframe src="https://www.youtube.com/embed/{{ film_faris['trailer_url_faris'] }}?rel=0&modestbranding=1"
+            title="Trailer {{ film_faris['judul_faris'] }}" frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen></iframe>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

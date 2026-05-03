@@ -1,0 +1,42 @@
+{% extends 'base_faris.html' %}
+{% block title %}Dashboard Pengelola Faris{% endblock %}
+
+{% block content %}
+<div class="dashboard-header-faris">
+    <h2><i class="fa-solid fa-gauge"></i> Dashboard Pengelola</h2>
+    <p>Selamat datang, {{ session.get('nama_faris', 'Pengelola') }}! Silakan kelola operasional bioskop di sini.</p>
+</div>
+
+<div class="dashboard-stats-faris">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-calendar-days"></i></div>
+        <div class="stat-number">{{ total_jadwal_faris }}</div>
+        <div class="stat-label">Total Jadwal Tayang</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-building"></i></div>
+        <div class="stat-number">{{ total_teater_faris }}</div>
+        <div class="stat-label">Total Teater</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+        <div class="stat-number">Rp {{ "{:,.0f}".format(total_pendapatan_faris) }}</div>
+        <div class="stat-label">Total Pendapatan</div>
+    </div>
+</div>
+
+<div class="menu-admin-faris">
+    <a href="{{ url_for('pengelola_jadwal_faris') }}" class="menu-card">
+        <span><i class="fa-regular fa-calendar-plus"></i></span>
+        <p>Kelola Jadwal</p>
+    </a>
+    <a href="{{ url_for('pengelola_teater_faris') }}" class="menu-card">
+        <span><i class="fa-solid fa-building"></i></span>
+        <p>Kelola Teater</p>
+    </a>
+    <a href="{{ url_for('pengelola_laporan_keuangan_faris') }}" class="menu-card">
+        <span><i class="fa-solid fa-file-invoice-dollar"></i></span>
+        <p>Laporan Keuangan</p>
+    </a>
+</div>
+{% endblock %}

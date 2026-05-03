@@ -1,0 +1,462 @@
+{% extends 'base_faris.html' %} {% block title %}Beranda{% endblock %}
+
+{% block content %}
+
+{% if films_faris %}
+<div class="banner-slider">
+    <div class="banner-track" id="bannerTrack">
+        {% for film_faris in films_faris %}
+        <div class="banner-slide">
+            <div class="banner-bg" {% if film_faris['poster_faris'] and
+                (film_faris['poster_faris'].startswith('http://') or film_faris['poster_faris'].startswith('https://'))
+                %} style="background-image: url('{{ film_faris['poster_faris'] }}')" {% else %}
+                style="background: linear-gradient(135deg, #1a1a2e, #cc0000)" {% endif %}></div>
+            <div class="banner-overlay"></div>
+            <div class="banner-content">
+                <div class="banner-poster">
+                    {% if film_faris['poster_faris'] and (film_faris['poster_faris'].startswith('http://') or
+                    film_faris['poster_faris'].startswith('https://')) %}
+                    <img src="{{ film_faris['poster_faris'] }}" alt="{{ film_faris['judul_faris'] }}"
+                        onerror="this.src='https://placehold.co/200x300/1a1a2e/ffffff?text=No+Poster'">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='img/' + (film_faris['poster_faris'] or 'default.jpg')) }}"
+                        alt="{{ film_faris['judul_faris'] }}"
+                        onerror="this.src='https://placehold.co/200x300/1a1a2e/ffffff?text=No+Poster'">
+                    {% endif %}
+                </div>
+                <div class="banner-info">
+                    <span class="banner-genre"><i class="fa-solid fa-masks-theater"></i> {{ film_faris['genre_faris']
+                        }}</span>
+                    <h2 class="banner-title">{{ film_faris['judul_faris'] }}</h2>
+                    <div class="banner-meta">
+                        <span><i class="fa-regular fa-clock"></i> {{ film_faris['durasi_faris'] }} menit</span>
+                        <span class="banner-rating">{{ film_faris['rating_faris'] }}</span>
+                    </div>
+                    <p class="banner-sinopsis">{{ film_faris['sinopsis_faris'][:150] }}{% if
+                        film_faris['sinopsis_faris']|length > 150 %}...{% endif %}</p>
+                    <a href="{{ url_for('detail_film_faris', id_film_faris=film_faris['id_film_faris']) }}"
+                        class="banner-btn">
+                        <i class="fa-solid fa-ticket"></i> Pesan Tiket
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <button class="banner-nav prev" id="btnPrev"><i class="fa-solid fa-chevron-left"></i></button>
+    <button class="banner-nav next" id="btnNext"><i class="fa-solid fa-chevron-right"></i></button>
+    <div class="banner-dots" id="bannerDots">
+        {% for film_faris in films_faris %}
+        <span class="dot {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}"></span>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="search-box">
+    <form method="GET" action="{{ url_for('index_faris') }}">
+        <div class="search-inner">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" name="q_faris" placeholder="Cari film berdasarkan judul atau genre..."
+                value="{{ keyword_faris }}" autocomplete="off">
+            <button type="submit">Cari</button>
+            {% if keyword_faris %}
+            <a href="{{ url_for('index_faris') }}" class="btn-reset"><i class="fa-solid fa-xmark"></i></a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<div class="section-title">
+    {% if keyword_faris %}
+    <h2><i class="fa-solid fa-magnifying-glass"></i> Hasil: "<strong>{{ keyword_faris }}</strong>"
+        <span style="font-size:14px; color:#999; font-weight:normal;">— {{ films_faris|length }} film</span>
+    </h2>
+    {% else %}
+    <h2><i class="fa-solid fa-clapperboard"></i> Film Tayang</h2>
+    {% endif %}
+</div>
+
+<div class="film-slider-wrapper">
+    <button class="film-slider-btn prev" id="filmPrev"><i class="fa-solid fa-chevron-left"></i></button>
+    <div class="film-slider">
+        <div class="film-slider-track" id="filmSliderTrack">
+            {% for film_faris in films_faris %}
+            <div class="film-card">
+                <div class="film-poster">
+                    {% if film_faris['poster_faris'] and (film_faris['poster_faris'].startswith('http://') or
+                    film_faris['poster_faris'].startswith('https://')) %}
+                    <img src="{{ film_faris['poster_faris'] }}" alt="{{ film_faris['judul_faris'] }}"
+                        onerror="this.src='https://placehold.co/200x300/1a1a2e/ffffff?text=No+Poster'">
+                    {% else %}
+                    <img src="{{ url_for('static', filename='img/' + (film_faris['poster_faris'] or 'default.jpg')) }}"
+                        alt="{{ film_faris['judul_faris'] }}"
+                        onerror="this.src='https://placehold.co/200x300/1a1a2e/ffffff?text=No+Poster'">
+                    {% endif %}
+                    <div class="film-rating">{{ film_faris['rating_faris'] }}</div>
+                </div>
+                <div class="film-info">
+                    <h3>{{ film_faris['judul_faris'] }}</h3>
+                    <p class="genre"><i class="fa-solid fa-masks-theater"></i> {{ film_faris['genre_faris'] }}</p>
+                    <p class="durasi"><i class="fa-regular fa-clock"></i> {{ film_faris['durasi_faris'] }} menit</p>
+                    <a href="{{ url_for('detail_film_faris', id_film_faris=film_faris['id_film_faris']) }}"
+                        class="btn-pesan">
+                        <i class="fa-solid fa-ticket"></i> Pesan Tiket
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <div style="text-align:center; padding:50px 20px; color:#aaa; width:100%;">
+                <i class="fa-solid fa-film" style="font-size:50px; margin-bottom:14px; display:block;"></i>
+                {% if keyword_faris %}
+                <p>Film "<strong>{{ keyword_faris }}</strong>" tidak ditemukan.</p>
+                <a href="{{ url_for('index_faris') }}" style="color:#cc0000;">Lihat semua film</a>
+                {% else %}
+                <p>Belum ada film yang sedang tayang.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <button class="film-slider-btn next" id="filmNext"><i class="fa-solid fa-chevron-right"></i></button>
+</div>
+<div class="film-slider-dots" id="filmSliderDots">
+    {% for film_faris in films_faris %}
+    <span class="film-dot {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}"></span>
+    {% endfor %}
+</div>
+
+<script>
+// ==================== BANNER SLIDER (SIMPLE LOOP) ====================
+var track = document.getElementById('bannerTrack');
+var slides = document.querySelectorAll('.banner-slide');
+var dots = document.querySelectorAll('.dot');
+var btnPrev = document.getElementById('btnPrev');
+var btnNext = document.getElementById('btnNext');
+var totalSlides = slides.length;
+var currentIndex = 0;
+var autoPlayInterval;
+var isAnimating = false;
+
+// Fungsi utama untuk ganti slide
+function goToSlide(index, animate = true) {
+    if (isAnimating) return;
+    if (index < 0) index = totalSlides - 1;
+    if (index >= totalSlides) index = 0;
+    
+    isAnimating = true;
+    currentIndex = index;
+    
+    if (animate) {
+        track.style.transition = 'transform 0.5s ease-out';
+    } else {
+        track.style.transition = 'none';
+    }
+    
+    track.style.transform = 'translateX(-' + (currentIndex * 100) + '%)';
+    
+    // Update dots
+    for (var i = 0; i < dots.length; i++) {
+        if (i === currentIndex) {
+            dots[i].classList.add('active');
+        } else {
+            dots[i].classList.remove('active');
+        }
+    }
+    
+    setTimeout(function() {
+        isAnimating = false;
+    }, 500);
+}
+
+// Next slide
+function nextSlide() {
+    if (isAnimating) return;
+    goToSlide(currentIndex + 1, true);
+}
+
+// Prev slide  
+function prevSlide() {
+    if (isAnimating) return;
+    goToSlide(currentIndex - 1, true);
+}
+
+// Auto play
+function startAutoPlay() {
+    if (autoPlayInterval) clearInterval(autoPlayInterval);
+    autoPlayInterval = setInterval(function() {
+        nextSlide();
+    }, 5000);
+}
+
+function stopAutoPlay() {
+    if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+    }
+}
+
+// Event listeners (hanya jika elemen ada)
+if (btnNext) {
+    btnNext.addEventListener('click', function() {
+        stopAutoPlay();
+        nextSlide();
+        startAutoPlay();
+    });
+}
+
+if (btnPrev) {
+    btnPrev.addEventListener('click', function() {
+        stopAutoPlay();
+        prevSlide();
+        startAutoPlay();
+    });
+}
+
+for (var i = 0; i < dots.length; i++) {
+    (function(idx) {
+        dots[idx].addEventListener('click', function() {
+            stopAutoPlay();
+            goToSlide(idx, true);
+            startAutoPlay();
+        });
+    })(i);
+}
+
+// Touch swipe untuk mobile
+var touchStart = 0;
+track.addEventListener('touchstart', function(e) {
+    touchStart = e.changedTouches[0].screenX;
+    stopAutoPlay();
+});
+
+track.addEventListener('touchend', function(e) {
+    var touchEnd = e.changedTouches[0].screenX;
+    if (touchEnd < touchStart - 50) {
+        nextSlide();
+    }
+    if (touchEnd > touchStart + 50) {
+        prevSlide();
+    }
+    startAutoPlay();
+});
+
+// Hover pause
+var bannerSlider = document.querySelector('.banner-slider');
+if (bannerSlider) {
+    bannerSlider.addEventListener('mouseenter', stopAutoPlay);
+    bannerSlider.addEventListener('mouseleave', startAutoPlay);
+}
+
+// Mulai slider
+if (totalSlides > 0) {
+    goToSlide(0, false);
+    startAutoPlay();
+}
+
+// ==================== FILM SLIDER (INFINITE LOOP) ====================
+(function() {
+    var slider = document.querySelector('.film-slider');
+    var track = document.getElementById('filmSliderTrack');
+    if (!track || !slider) return;
+
+    var originalCards = Array.from(track.querySelectorAll('.film-card'));
+    var total = originalCards.length;
+    if (total === 0) return;
+
+    var filmDots = document.querySelectorAll('.film-dot');
+    var filmBtnPrev = document.getElementById('filmPrev');
+    var filmBtnNext = document.getElementById('filmNext');
+    var filmAutoPlay;
+    var isAnimating = false;
+    var currentPage = 0;
+
+    function getPerView() {
+        var w = window.innerWidth;
+        if (w <= 600) return 1;
+        if (w <= 900) return 2;
+        if (w <= 1200) return 3;
+        return 4;
+    }
+
+    function getTotalPages() {
+        return Math.ceil(total / getPerView());
+    }
+
+    // Bangun clone: duplikat semua card di depan dan belakang
+    function buildClones() {
+        // Hapus clone lama jika ada
+        track.querySelectorAll('.film-card-clone').forEach(function(el) { el.remove(); });
+
+        // Clone semua card, taruh di belakang
+        originalCards.forEach(function(card) {
+            var clone = card.cloneNode(true);
+            clone.classList.add('film-card-clone');
+            track.appendChild(clone);
+        });
+
+        // Clone semua card, taruh di depan
+        originalCards.slice().reverse().forEach(function(card) {
+            var clone = card.cloneNode(true);
+            clone.classList.add('film-card-clone');
+            track.insertBefore(clone, track.firstChild);
+        });
+    }
+
+    // Hitung offset pixel ke halaman tertentu (dalam set original)
+    function getOffset(pageIndex) {
+        var perView = getPerView();
+        var cardIndex = pageIndex * perView;
+        if (cardIndex >= total) cardIndex = total - 1;
+        // Card original dimulai setelah total clone di depan
+        var allCards = track.querySelectorAll('.film-card, .film-card-clone');
+        var offset = allCards[total + cardIndex].offsetLeft;
+        return offset;
+    }
+
+    // Pindah ke halaman (dengan animasi opsional)
+    function goTo(pageIndex, animate) {
+        var perView = getPerView();
+        var totalPages = getTotalPages();
+
+        currentPage = ((pageIndex % totalPages) + totalPages) % totalPages;
+
+        var allCards = Array.from(track.querySelectorAll('.film-card, .film-card-clone'));
+        var targetCardIndex = total + currentPage * perView;
+        var offset = allCards[targetCardIndex].offsetLeft;
+
+        track.style.transition = animate ? 'transform 0.5s cubic-bezier(0.4,0,0.2,1)' : 'none';
+        track.style.transform = 'translateX(-' + offset + 'px)';
+
+        // Update dots
+        for (var i = 0; i < filmDots.length; i++) {
+            filmDots[i].classList.toggle('active', i === currentPage);
+        }
+
+        isAnimating = animate;
+        if (animate) {
+            setTimeout(function() { isAnimating = false; }, 520);
+        }
+    }
+
+    // Setelah slide ke clone, langsung jump tanpa animasi ke original
+    function handleCloneJump() {
+        track.addEventListener('transitionend', function() {
+            var totalPages = getTotalPages();
+            // Jika sedang di clone depan atau belakang, jump ke original tanpa animasi
+            if (currentPage === 0 || currentPage === totalPages - 1) {
+                // Sudah di original, tidak perlu jump
+            }
+            isAnimating = false;
+        });
+    }
+
+    function next() {
+        if (isAnimating) return;
+        isAnimating = true;
+        var perView = getPerView();
+        var totalPages = getTotalPages();
+        var nextPage = currentPage + 1;
+
+        if (nextPage >= totalPages) {
+            // Slide ke clone set berikutnya dulu
+            var allCards = Array.from(track.querySelectorAll('.film-card, .film-card-clone'));
+            var cloneCardIndex = total * 2 + currentPage * perView; // clone di belakang
+            // Sebenarnya clone belakang dimulai di index total*2 dari awal allCards
+            // allCards: [clone depan (total)][original (total)][clone belakang (total)]
+            var cloneOffset = allCards[total * 2].offsetLeft;
+            track.style.transition = 'transform 0.5s cubic-bezier(0.4,0,0.2,1)';
+            track.style.transform = 'translateX(-' + cloneOffset + 'px)';
+            setTimeout(function() {
+                currentPage = 0;
+                goTo(0, false);
+                isAnimating = false;
+            }, 520);
+        } else {
+            goTo(nextPage, true);
+        }
+    }
+
+    function prev() {
+        if (isAnimating) return;
+        isAnimating = true;
+        var perView = getPerView();
+        var totalPages = getTotalPages();
+        var prevPage = currentPage - 1;
+
+        if (prevPage < 0) {
+            // Slide ke clone set depan dulu
+            var allCards = Array.from(track.querySelectorAll('.film-card, .film-card-clone'));
+            // Clone depan: index 0 sampai total-1
+            // Halaman terakhir dari clone depan
+            var lastPage = totalPages - 1;
+            var cloneCardIndex = lastPage * perView;
+            var cloneOffset = allCards[cloneCardIndex].offsetLeft;
+            track.style.transition = 'transform 0.5s cubic-bezier(0.4,0,0.2,1)';
+            track.style.transform = 'translateX(-' + cloneOffset + 'px)';
+            setTimeout(function() {
+                currentPage = totalPages - 1;
+                goTo(totalPages - 1, false);
+                isAnimating = false;
+            }, 520);
+        } else {
+            goTo(prevPage, true);
+        }
+    }
+
+    function startAutoPlay() {
+        if (filmAutoPlay) clearInterval(filmAutoPlay);
+        filmAutoPlay = setInterval(function() { next(); }, 5000);
+    }
+    function stopAutoPlay() {
+        if (filmAutoPlay) { clearInterval(filmAutoPlay); filmAutoPlay = null; }
+    }
+
+    // Event listeners
+    if (filmBtnNext) filmBtnNext.addEventListener('click', function() { stopAutoPlay(); next(); startAutoPlay(); });
+    if (filmBtnPrev) filmBtnPrev.addEventListener('click', function() { stopAutoPlay(); prev(); startAutoPlay(); });
+
+    for (var i = 0; i < filmDots.length; i++) {
+        (function(idx) {
+            filmDots[idx].addEventListener('click', function() {
+                if (isAnimating) return;
+                stopAutoPlay(); goTo(idx, true); startAutoPlay();
+            });
+        })(i);
+    }
+
+    var filmWrapper = document.querySelector('.film-slider-wrapper');
+    if (filmWrapper) {
+        filmWrapper.addEventListener('mouseenter', stopAutoPlay);
+        filmWrapper.addEventListener('mouseleave', startAutoPlay);
+    }
+
+    // Touch swipe
+    var touchStart = 0;
+    track.addEventListener('touchstart', function(e) { touchStart = e.changedTouches[0].screenX; stopAutoPlay(); }, {passive:true});
+    track.addEventListener('touchend', function(e) {
+        var touchEnd = e.changedTouches[0].screenX;
+        if (touchEnd < touchStart - 50) next();
+        if (touchEnd > touchStart + 50) prev();
+        startAutoPlay();
+    }, {passive:true});
+
+    // Resize: rebuild
+    var resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            buildClones();
+            goTo(currentPage, false);
+        }, 200);
+    });
+
+    // Init
+    buildClones();
+    setTimeout(function() {
+        goTo(0, false);
+        startAutoPlay();
+    }, 50);
+})();
+</script>
+{% endblock %}

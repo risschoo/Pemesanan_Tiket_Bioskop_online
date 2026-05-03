@@ -1,0 +1,7 @@
+Untuk di MidTrans bisa menggunakan semua pembayaran, tetapi kalo hanya ingin demo cuma bisa pakai Credit card, kalo semisal memakai Qris harus scan dari dana asli, maupun BCA harus menggunakan verifikasi manual dari pengelola untuk Credit card ada kartu testing demo
+
+- Card Number: 4811 1111 1111 1114
+- Expiry Month: 12
+- Expiry Year: 26
+- CVV: 123
+- OTP/3DS: 112233

@@ -1,0 +1,39 @@
+{% extends 'base_faris.html' %}
+{% block title %}Jadwal Tayang{% endblock %}
+
+{% block content %}
+<div class="section-title">
+    <h2>📅 Jadwal Tayang</h2>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>No</th>
+            <th>Film</th>
+            <th>Teater</th>
+            <th>Tanggal</th>
+            <th>Jam</th>
+            <th>Harga Weekday</th>
+            <th>Harga Weekend</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for j_faris in jadwals_faris %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ j_faris['judul_faris'] }}</td>
+            <td>{{ j_faris['nama_teater_faris'] }}</td>
+            <td>{{ j_faris['tanggal_faris'].strftime('%d-%m-%Y') }}</td>
+            <td>{{ j_faris['jam_tayang_faris'] | format_jam_faris }}</td>
+            <td style="color:#007700; font-weight:bold;">Rp {{ "{:,.0f}".format(j_faris['harga_weekday_faris']) }}</td>
+            <td style="color:#cc0000; font-weight:bold;">Rp {{ "{:,.0f}".format(j_faris['harga_weekend_faris']) }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="7" style="text-align:center; color:#aaa; padding:30px;">Belum ada jadwal Faris.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'base_faris.html' %}
+{% block title %}Upload Bukti Bayar{% endblock %}
+{% block content %}
+<div class="auth-box" style="max-width:500px;">
+    <h2><i class="fa-solid fa-credit-card"></i> Upload Bukti Pembayaran</h2>
+    <div class="ringkasan-pesan">
+        <table>
+            <tr>
+                <td><i class="fa-solid fa-clapperboard"></i> Film</td>
+                <td>: <strong>{{ pemesanan_faris['judul_faris'] }}</strong></td>
+            </tr>
+            <tr>
+                <td><i class="fa-solid fa-building"></i> Teater</td>
+                <td>: {{ pemesanan_faris['nama_teater_faris'] }}</td>
+            </tr>
+            <tr>
+                <td><i class="fa-regular fa-calendar"></i> Tanggal</td>
+                <td>: {{ pemesanan_faris['tanggal_faris'].strftime('%d %B %Y') }}</td>
+            </tr>
+            <tr>
+                <td><i class="fa-regular fa-clock"></i> Jam</td>
+                <td>: {{ pemesanan_faris['jam_tayang_faris'] | format_jam_faris }}</td>
+            </tr>
+            <tr>
+                <td><i class="fa-solid fa-couch"></i> Kursi</td>
+                <td>:
+                    {% for k_faris in kursis_faris %}
+                    <strong>{{ k_faris['kode_kursi_faris'] }}</strong>{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+            <tr>
+                <td><i class="fa-solid fa-money-bill-wave"></i> Total</td>
+                <td>: <strong style="color:#cc0000; font-size:16px;">
+                        Rp {{ "{:,.0f}".format(pemesanan_faris['total_harga_faris']) }}
+                    </strong></td>
+            </tr>
+        </table>
+    </div>
+    <div class="info-transfer">
+        <strong><i class="fa-solid fa-building-columns"></i> Transfer ke salah satu rekening:</strong><br>
+        <i class="fa-solid fa-landmark"></i> BCA &nbsp;&nbsp;&nbsp;: <strong>1234567890</strong> a.n CGV<br>
+        <i class="fa-solid fa-landmark"></i> Mandiri: <strong>0987654321</strong> a.n CGV<br>
+        <i class="fa-solid fa-landmark"></i> BRI &nbsp;&nbsp;&nbsp;: <strong>1122334455</strong> a.n CGV
+    </div>
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label><i class="fa-solid fa-image"></i> Upload Bukti Transfer (JPG / PNG)</label>
+            <input type="file" name="bukti_faris" accept=".jpg,.jpeg,.png" required>
+        </div>
+        <button type="submit" class="btn-submit">
+            <i class="fa-solid fa-upload"></i> Upload Sekarang
+        </button>
+    </form>
+</div>
+{% endblock %}

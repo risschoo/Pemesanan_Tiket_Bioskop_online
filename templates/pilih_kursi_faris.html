@@ -1,0 +1,180 @@
+{% extends 'base_faris.html' %}
+{% block title %}Pilih Kursi{% endblock %}
+
+{% block content %}
+<div class="kursi-wrapper">
+    <h2><i class="fa-solid fa-couch"></i> Pilih Kursi Faris</h2>
+    <p class="kursi-sub">
+        <strong>{{ jadwal_faris['judul_faris'] }}</strong> &nbsp;|&nbsp;
+        {{ jadwal_faris['tanggal_faris'].strftime('%d %B %Y') }} &nbsp;|&nbsp;
+        <i class="fa-regular fa-clock"></i> {{ jadwal_faris['jam_tayang_faris'] | format_jam_faris }} &nbsp;|&nbsp;
+        <i class="fa-solid fa-building"></i> {{ jadwal_faris['nama_teater_faris'] }}
+    </p>
+
+    <div class="harga-info {{ 'weekend' if tipe_hari_faris == 'Weekend' else 'weekday' }}">
+        <i class="fa-solid fa-money-bill-wave"></i>
+        Harga Tiket Faris <strong>({{ tipe_hari_faris }})</strong>:
+        <strong>Rp {{ "{:,.0f}".format(harga_faris) }}</strong> / kursi
+    </div>
+
+    <div class="layar-wrapper">
+        <div class="layar-screen">
+            <i class="fa-solid fa-display"></i> &nbsp; S C R E E N &nbsp; <i class="fa-solid fa-display"></i>
+        </div>
+        <div class="layar-shadow"></div>
+    </div>
+
+    <form method="POST" action="{{ url_for('pesan_faris') }}">
+        <input type="hidden" name="id_jadwal_faris" value="{{ jadwal_faris['id_jadwal_faris'] }}">
+
+        <div class="kursi-area">
+            {% set zona_pinggir = 2 %}
+            {% set tengah_mulai = zona_pinggir + 1 %}
+            {% set tengah_sampai = total_kolom_faris - zona_pinggir %}
+            {% set kanan_mulai = total_kolom_faris - zona_pinggir + 1 %}
+
+            {% set baris_list = [] %}
+            {% for k_faris in semua_kursi_faris %}
+            {% set b = k_faris['kode_kursi_faris'][0] %}
+            {% if b not in baris_list %}
+            {% set _ = baris_list.append(b) %}
+            {% endif %}
+            {% endfor %}
+
+            <table class="kursi-table">
+                <tr class="kursi-header-row">
+                    <td class="label-baris"></td>
+                    {% for n in range(1, zona_pinggir + 1) %}
+                    <td class="kursi-col-header">{{ n }}</td>
+                    {% endfor %}
+                    <td class="aisle-col"></td>
+                    {% for n in range(tengah_mulai, tengah_sampai + 1) %}
+                    <td class="kursi-col-header">{{ n }}</td>
+                    {% endfor %}
+                    <td class="aisle-col"></td>
+                    {% for n in range(kanan_mulai, total_kolom_faris + 1) %}
+                    <td class="kursi-col-header">{{ n }}</td>
+                    {% endfor %}
+                </tr>
+
+                {% for baris in baris_list %}
+                <tr class="kursi-row">
+                    <td class="label-baris">{{ baris }}</td>
+
+                    {% for n in range(1, zona_pinggir + 1) %}
+                    {% set kode = baris ~ n %}
+                    {% set found = namespace(k=None) %}
+                    {% for k_faris in semua_kursi_faris %}
+                    {% if k_faris['kode_kursi_faris'] == kode %}{% set found.k = k_faris %}{% endif %}
+                    {% endfor %}
+                    <td>
+                        {% if found.k %}
+                        {% if found.k['id_kursi_faris'] in kursi_dipesan_faris %}
+                        <div class="kursi dipesan" title="{{ kode }}">{{ kode }}</div>
+                        {% else %}
+                        <label class="kursi tersedia" title="{{ kode }}">
+                            <input type="checkbox" name="kursi_faris" value="{{ found.k['id_kursi_faris'] }}"
+                                onchange="hitungTotalFaris()">
+                            {{ kode }}
+                        </label>
+                        {% endif %}
+                        {% else %}
+                        <div class="kursi kosong"></div>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+
+                    <td class="aisle-col"></td>
+
+                    {% for n in range(tengah_mulai, tengah_sampai + 1) %}
+                    {% set kode = baris ~ n %}
+                    {% set found = namespace(k=None) %}
+                    {% for k_faris in semua_kursi_faris %}
+                    {% if k_faris['kode_kursi_faris'] == kode %}{% set found.k = k_faris %}{% endif %}
+                    {% endfor %}
+                    <td>
+                        {% if found.k %}
+                        {% if found.k['id_kursi_faris'] in kursi_dipesan_faris %}
+                        <div class="kursi dipesan" title="{{ kode }}">{{ kode }}</div>
+                        {% else %}
+                        <label class="kursi tersedia" title="{{ kode }}">
+                            <input type="checkbox" name="kursi_faris" value="{{ found.k['id_kursi_faris'] }}"
+                                onchange="hitungTotalFaris()">
+                            {{ kode }}
+                        </label>
+                        {% endif %}
+                        {% else %}
+                        <div class="kursi kosong"></div>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+
+                    <td class="aisle-col"></td>
+
+                    {% for n in range(kanan_mulai, total_kolom_faris + 1) %}
+                    {% set kode = baris ~ n %}
+                    {% set found = namespace(k=None) %}
+                    {% for k_faris in semua_kursi_faris %}
+                    {% if k_faris['kode_kursi_faris'] == kode %}{% set found.k = k_faris %}{% endif %}
+                    {% endfor %}
+                    <td>
+                        {% if found.k %}
+                        {% if found.k['id_kursi_faris'] in kursi_dipesan_faris %}
+                        <div class="kursi dipesan" title="{{ kode }}">{{ kode }}</div>
+                        {% else %}
+                        <label class="kursi tersedia" title="{{ kode }}">
+                            <input type="checkbox" name="kursi_faris" value="{{ found.k['id_kursi_faris'] }}"
+                                onchange="hitungTotalFaris()">
+                            {{ kode }}
+                        </label>
+                        {% endif %}
+                        {% else %}
+                        <div class="kursi kosong"></div>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <div class="kursi-legend">
+            <div class="legend-item">
+                <div class="kursi tersedia mini"></div> Tersedia
+            </div>
+            <div class="legend-item">
+                <div class="kursi dipesan mini"></div> Dipesan
+            </div>
+            <div class="legend-item">
+                <div class="kursi mini" style="background:#cc0000;border:1.5px solid #880000;"></div> Dipilih
+            </div>
+        </div>
+
+        <div class="total-box">
+            <p>Kursi dipilih: <strong id="jml-kursi-faris">0</strong> kursi</p>
+            <p>Total Harga: <strong id="total-harga-faris">Rp 0</strong></p>
+            <br>
+            <button type="submit" class="btn-submit" id="btn-pesan-faris" disabled>
+                <i class="fa-solid fa-ticket"></i> Pesan Sekarang
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    var hargaPerKursiFaris = {{ harga_faris }};
+    function hitungTotalFaris() {
+        var checked = document.querySelectorAll('input[name="kursi_faris"]:checked');
+        var jumlah = checked.length;
+        var total = jumlah * hargaPerKursiFaris;
+        document.getElementById('jml-kursi-faris').textContent = jumlah;
+        document.getElementById('total-harga-faris').textContent = 'Rp ' + total.toLocaleString('id-ID');
+        document.getElementById('btn-pesan-faris').disabled = (jumlah === 0);
+        document.querySelectorAll('.kursi.tersedia').forEach(function (el) {
+            var cb = el.querySelector('input');
+            if (cb && cb.checked) { el.classList.add('dipilih'); }
+            else { el.classList.remove('dipilih'); }
+        });
+    }
+</script>
+{% endblock %}

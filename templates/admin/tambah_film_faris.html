@@ -1,0 +1,72 @@
+{% extends 'base_faris.html' %}
+{% block title %}Tambah Film{% endblock %}
+
+{% block content %}
+<div class="auth-box" style="max-width:580px;">
+    <h2>🎬 Tambah Film Baru</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label>Judul Film</label>
+            <input type="text" name="judul_faris" placeholder="Masukkan judul film" required>
+        </div>
+        <div class="form-group">
+            <label>Genre</label>
+            <input type="text" name="genre_faris" placeholder="Contoh: Action, Drama">
+        </div>
+        <div class="form-group">
+            <label>Durasi(menit)</label>
+            <input type="number" name="durasi_faris" placeholder="Contoh: 120" min="1">
+        </div>
+        <div class="form-group">
+            <label>Rating</label>
+            <select name="rating_faris">
+                <option value="SU">SU</option>
+                <option value="PG-13">PG-13</option>
+                <option value="13+">13+</option>
+                <option value="17+">17+</option>
+                <option value="21+">21+</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Sinopsis</label>
+            <textarea name="sinopsis_faris" rows="4" placeholder="Tulis sinopsis singkat..."></textarea>
+        </div>
+        <div class="form-group">
+            <label>URL Poster Film /label>
+                <input type="text" name="poster_faris" placeholder="https://... (URL gambar) atau nama file: film.jpg">
+                <small style="color:#888; font-size:12px;">
+                    💡 Bisa pakai URL dari internet atau nama file di <code>static/img/</code>
+                </small>
+        </div>
+        <div id="poster-preview" style="display:none; margin-top:8px; margin-bottom:8px;">
+            <img id="preview-img" src="" alt="preview"
+                style="max-height:160px; border-radius:6px; border:1px solid #ddd;">
+        </div>
+        <div class="form-group">
+            <label>YouTube Trailer ID</label>
+            <input type="text" name="trailer_url_faris" placeholder="Contoh: dQw4w9WgXcQ">
+        </div>
+        <button type="submit" class="btn-submit">Simpan Film Faris</button>
+        <a href="{{ url_for('admin_film_faris') }}"
+            style="display:block; text-align:center; margin-top:12px; color:#cc0000; font-size:13px;">
+            ← Kembali
+        </a>
+    </form>
+</div>
+
+<script>
+    var inputPoster = document.querySelector('input[name="poster_faris"]');
+    var previewBox = document.getElementById('poster-preview');
+    var previewImg = document.getElementById('preview-img');
+
+    inputPoster.addEventListener('input', function () {
+        var val = this.value.trim();
+        if (val.startsWith('http://') || val.startsWith('https://')) {
+            previewImg.src = val;
+            previewBox.style.display = 'block';
+        } else {
+            previewBox.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

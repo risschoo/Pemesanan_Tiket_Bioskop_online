@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CGV Cinemas{% if self.title() %} - {% block title %}{% endblock %}{% endif %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_faris.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+
+<body>
+
+    <div class="navbar">
+        <div class="navbar-left">
+            <a href="{{ url_for('index_faris') }}" class="logo">
+                CGV
+                <span>Cinemas</span>
+            </a>
+        </div>
+        <div class="navbar-right">
+            <a href="{{ url_for('index_faris') }}"><i class="fa-solid fa-house"></i> Beranda</a>
+
+            {% if session.get('role_faris') == 'pengguna' %}
+            <a href="{{ url_for('riwayat_faris') }}"><i class="fa-solid fa-ticket"></i> Tiket Saya</a>
+            <span class="user-info"><i class="fa-solid fa-circle-user"></i> {{ session['nama_faris'] }}</span>
+            <a href="{{ url_for('logout_faris') }}" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i>
+                Keluar</a>
+
+            {% elif session.get('role_faris') == 'admin' %}
+            <a href="{{ url_for('admin_dashboard_faris') }}"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+            <span class="user-info"><i class="fa-solid fa-user-shield"></i> {{ session['nama_faris'] }}</span>
+            <a href="{{ url_for('logout_faris') }}" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i>
+                Keluar</a>
+
+            {% elif session.get('role_faris') == 'pengelola' %}
+            <a href="{{ url_for('pengelola_dashboard_faris') }}"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+            <a href="{{ url_for('pengelola_jadwal_faris') }}"><i class="fa-regular fa-calendar"></i> Kelola Jadwal</a>
+            <a href="{{ url_for('pengelola_teater_faris') }}"><i class="fa-solid fa-building"></i> Kelola Teater</a>
+            <a href="{{ url_for('pengelola_laporan_keuangan_faris') }}"><i class="fa-solid fa-file-invoice-dollar"></i>
+                Laporan Keuangan</a>
+            <span class="user-info"><i class="fa-solid fa-user-tie"></i> {{ session['nama_faris'] }}</span>
+            <a href="{{ url_for('logout_faris') }}" class="btn-logout"><i class="fa-solid fa-right-from-bracket"></i>
+                Keluar</a>
+
+            {% else %}
+            <a href="{{ url_for('login_faris') }}" class="btn-login"><i class="fa-solid fa-right-to-bracket"></i>
+                Login</a>
+            <a href="{{ url_for('register_faris') }}" class="btn-register"><i class="fa-solid fa-user-plus"></i>
+                Daftar</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">
+            {% if category == 'success' %}<i class="fa-solid fa-circle-check"></i>
+            {% elif category == 'danger' %}<i class="fa-solid fa-circle-xmark"></i>
+            {% elif category == 'warning' %}<i class="fa-solid fa-triangle-exclamation"></i>
+            {% else %}<i class="fa-solid fa-circle-info"></i>
+            {% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <div class="footer">
+        <p><i class="fa-solid fa-film"></i> &copy; 2024 CGV Cinemas &mdash; Sistem Pemesanan Tiket Bioskop</p>
+        <p>Dibuat oleh Faris</p>
+    </div>
+
+</body>
+
+</html>

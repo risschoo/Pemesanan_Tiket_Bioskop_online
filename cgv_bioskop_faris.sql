@@ -1,0 +1,767 @@
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+
+CREATE TABLE `detail_pemesanan_faris` (
+  `id_detail_faris` int(11) NOT NULL,
+  `id_pemesanan_faris` int(11) NOT NULL,
+  `id_kursi_faris` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `detail_pemesanan_faris` (`id_detail_faris`, `id_pemesanan_faris`, `id_kursi_faris`) VALUES
+(1, 1, 117),
+(2, 1, 118);
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `film_faris`
+--
+
+CREATE TABLE `film_faris` (
+  `id_film_faris` int(11) NOT NULL,
+  `judul_faris` varchar(150) NOT NULL,
+  `genre_faris` varchar(100) DEFAULT NULL,
+  `durasi_faris` int(11) DEFAULT NULL,
+  `rating_faris` varchar(10) DEFAULT NULL,
+  `sinopsis_faris` text DEFAULT NULL,
+  `poster_faris` varchar(255) DEFAULT NULL,
+  `trailer_url_faris` varchar(255) DEFAULT NULL COMMENT 'YouTube embed ID, contoh: dQw4w9WgXcQ',
+  `status_faris` enum('tayang','tidak') DEFAULT 'tayang'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `film_faris`
+--
+
+INSERT INTO `film_faris` (`id_film_faris`, `judul_faris`, `genre_faris`, `durasi_faris`, `rating_faris`, `sinopsis_faris`, `poster_faris`, `trailer_url_faris`, `status_faris`) VALUES
+(1, 'Avengers: Doomsday', 'Action, Sci-Fi', 150, 'PG-13', 'Para Avenger bersatu melawan ancaman terbesar yang pernah ada di alam semesta. Kali ini tidak semua pahlawan akan selamat.', 'https://preview.redd.it/avengers-doomsday-poster-featuring-the-confirmed-cast-so-v0-b8a68egs9n2f1.jpeg?width=640&crop=smart&auto=webp&s=6ee560e53f9d0b265abdf63d48ace4964d3c4555', 'Z8tZoagkbZk', 'tayang'),
+(2, 'Pabrik Gula', 'Horror', 120, '17+', 'Kisah horor mencekam di sebuah pabrik gula tua yang menyimpan misteri kelam. Sekelompok remaja terjebak dan harus bertahan hidup.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQSAJyXs3ZbMlaQCFySMKgYFSmRKW0HlMLftw&s', 'Uvp2ZBK7Vnc', 'tayang'),
+(3, 'Jumbo', 'Animation, Family', 95, 'SU', 'Petualangan mengharukan seekor gajah kecil yang mencari jati dirinya dan menemukan arti persahabatan sejati.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS9WeufahPMGJvo18etDMn1mSLEXVbED3ichQ&s', 'yMqDgbZmBdk', 'tayang'),
+(4, 'Mission: Impossible 8', 'Action, Thriller', 163, 'PG-13', 'Ethan Hunt kembali beraksi dalam misi paling berbahaya sepanjang karirnya untuk menyelamatkan dunia.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS4Mm7oh1D1aNsAAlKYWUggqjaNTNpyrk02FA&s', 'fsQgc9pCyDU', 'tayang'),
+(5, 'The Dark Forest', 'Horror, Mystery', 110, '17+', 'Seorang fotografer tersesat di hutan angker dan menemukan rahasia mengerikan yang tersembunyi selama bertahun-tahun.', 'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/the-dark-forest-thriller-book-design-template-62f46d0d7e79e7d6feb02c3a1733b12a_screen.jpg?ts=1698536807', 'pcOgE6pudB8', 'tayang');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `jadwal_faris`
+--
+
+CREATE TABLE `jadwal_faris` (
+  `id_jadwal_faris` int(11) NOT NULL,
+  `id_film_faris` int(11) NOT NULL,
+  `id_teater_faris` int(11) NOT NULL,
+  `tanggal_faris` date NOT NULL,
+  `jam_tayang_faris` time NOT NULL,
+  `harga_weekday_faris` decimal(10,0) DEFAULT 35000,
+  `harga_weekend_faris` decimal(10,0) DEFAULT 50000
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `jadwal_faris`
+--
+
+INSERT INTO `jadwal_faris` (`id_jadwal_faris`, `id_film_faris`, `id_teater_faris`, `tanggal_faris`, `jam_tayang_faris`, `harga_weekday_faris`, `harga_weekend_faris`) VALUES
+(1, 1, 1, '2026-04-16', '21:28:00', 35000, 50000),
+(2, 2, 1, '2026-04-16', '21:52:00', 35000, 50000);
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `kursi_faris`
+--
+
+CREATE TABLE `kursi_faris` (
+  `id_kursi_faris` int(11) NOT NULL,
+  `id_teater_faris` int(11) NOT NULL,
+  `kode_kursi_faris` varchar(10) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `kursi_faris`
+--
+
+INSERT INTO `kursi_faris` (`id_kursi_faris`, `id_teater_faris`, `kode_kursi_faris`) VALUES
+(1, 1, 'A1'),
+(2, 1, 'A2'),
+(3, 1, 'A3'),
+(4, 1, 'A4'),
+(5, 1, 'A5'),
+(6, 1, 'A6'),
+(7, 1, 'A7'),
+(8, 1, 'A8'),
+(9, 1, 'A9'),
+(10, 1, 'A10'),
+(11, 1, 'A11'),
+(12, 1, 'A12'),
+(13, 1, 'B1'),
+(14, 1, 'B2'),
+(15, 1, 'B3'),
+(16, 1, 'B4'),
+(17, 1, 'B5'),
+(18, 1, 'B6'),
+(19, 1, 'B7'),
+(20, 1, 'B8'),
+(21, 1, 'B9'),
+(22, 1, 'B10'),
+(23, 1, 'B11'),
+(24, 1, 'B12'),
+(25, 1, 'C1'),
+(26, 1, 'C2'),
+(27, 1, 'C3'),
+(28, 1, 'C4'),
+(29, 1, 'C5'),
+(30, 1, 'C6'),
+(31, 1, 'C7'),
+(32, 1, 'C8'),
+(33, 1, 'C9'),
+(34, 1, 'C10'),
+(35, 1, 'C11'),
+(36, 1, 'C12'),
+(37, 1, 'D1'),
+(38, 1, 'D2'),
+(39, 1, 'D3'),
+(40, 1, 'D4'),
+(41, 1, 'D5'),
+(42, 1, 'D6'),
+(43, 1, 'D7'),
+(44, 1, 'D8'),
+(45, 1, 'D9'),
+(46, 1, 'D10'),
+(47, 1, 'D11'),
+(48, 1, 'D12'),
+(49, 1, 'E1'),
+(50, 1, 'E2'),
+(51, 1, 'E3'),
+(52, 1, 'E4'),
+(53, 1, 'E5'),
+(54, 1, 'E6'),
+(55, 1, 'E7'),
+(56, 1, 'E8'),
+(57, 1, 'E9'),
+(58, 1, 'E10'),
+(59, 1, 'E11'),
+(60, 1, 'E12'),
+(61, 1, 'F1'),
+(62, 1, 'F2'),
+(63, 1, 'F3'),
+(64, 1, 'F4'),
+(65, 1, 'F5'),
+(66, 1, 'F6'),
+(67, 1, 'F7'),
+(68, 1, 'F8'),
+(69, 1, 'F9'),
+(70, 1, 'F10'),
+(71, 1, 'F11'),
+(72, 1, 'F12'),
+(73, 1, 'G1'),
+(74, 1, 'G2'),
+(75, 1, 'G3'),
+(76, 1, 'G4'),
+(77, 1, 'G5'),
+(78, 1, 'G6'),
+(79, 1, 'G7'),
+(80, 1, 'G8'),
+(81, 1, 'G9'),
+(82, 1, 'G10'),
+(83, 1, 'G11'),
+(84, 1, 'G12'),
+(85, 1, 'H1'),
+(86, 1, 'H2'),
+(87, 1, 'H3'),
+(88, 1, 'H4'),
+(89, 1, 'H5'),
+(90, 1, 'H6'),
+(91, 1, 'H7'),
+(92, 1, 'H8'),
+(93, 1, 'H9'),
+(94, 1, 'H10'),
+(95, 1, 'H11'),
+(96, 1, 'H12'),
+(97, 1, 'I1'),
+(98, 1, 'I2'),
+(99, 1, 'I3'),
+(100, 1, 'I4'),
+(101, 1, 'I5'),
+(102, 1, 'I6'),
+(103, 1, 'I7'),
+(104, 1, 'I8'),
+(105, 1, 'I9'),
+(106, 1, 'I10'),
+(107, 1, 'I11'),
+(108, 1, 'I12'),
+(109, 1, 'J1'),
+(110, 1, 'J2'),
+(111, 1, 'J3'),
+(112, 1, 'J4'),
+(113, 1, 'J5'),
+(114, 1, 'J6'),
+(115, 1, 'J7'),
+(116, 1, 'J8'),
+(117, 1, 'J9'),
+(118, 1, 'J10'),
+(119, 1, 'J11'),
+(120, 1, 'J12'),
+(121, 2, 'A1'),
+(122, 2, 'A2'),
+(123, 2, 'A3'),
+(124, 2, 'A4'),
+(125, 2, 'A5'),
+(126, 2, 'A6'),
+(127, 2, 'A7'),
+(128, 2, 'A8'),
+(129, 2, 'A9'),
+(130, 2, 'A10'),
+(131, 2, 'A11'),
+(132, 2, 'A12'),
+(133, 2, 'B1'),
+(134, 2, 'B2'),
+(135, 2, 'B3'),
+(136, 2, 'B4'),
+(137, 2, 'B5'),
+(138, 2, 'B6'),
+(139, 2, 'B7'),
+(140, 2, 'B8'),
+(141, 2, 'B9'),
+(142, 2, 'B10'),
+(143, 2, 'B11'),
+(144, 2, 'B12'),
+(145, 2, 'C1'),
+(146, 2, 'C2'),
+(147, 2, 'C3'),
+(148, 2, 'C4'),
+(149, 2, 'C5'),
+(150, 2, 'C6'),
+(151, 2, 'C7'),
+(152, 2, 'C8'),
+(153, 2, 'C9'),
+(154, 2, 'C10'),
+(155, 2, 'C11'),
+(156, 2, 'C12'),
+(157, 2, 'D1'),
+(158, 2, 'D2'),
+(159, 2, 'D3'),
+(160, 2, 'D4'),
+(161, 2, 'D5'),
+(162, 2, 'D6'),
+(163, 2, 'D7'),
+(164, 2, 'D8'),
+(165, 2, 'D9'),
+(166, 2, 'D10'),
+(167, 2, 'D11'),
+(168, 2, 'D12'),
+(169, 2, 'E1'),
+(170, 2, 'E2'),
+(171, 2, 'E3'),
+(172, 2, 'E4'),
+(173, 2, 'E5'),
+(174, 2, 'E6'),
+(175, 2, 'E7'),
+(176, 2, 'E8'),
+(177, 2, 'E9'),
+(178, 2, 'E10'),
+(179, 2, 'E11'),
+(180, 2, 'E12'),
+(181, 2, 'F1'),
+(182, 2, 'F2'),
+(183, 2, 'F3'),
+(184, 2, 'F4'),
+(185, 2, 'F5'),
+(186, 2, 'F6'),
+(187, 2, 'F7'),
+(188, 2, 'F8'),
+(189, 2, 'F9'),
+(190, 2, 'F10'),
+(191, 2, 'F11'),
+(192, 2, 'F12'),
+(193, 2, 'G1'),
+(194, 2, 'G2'),
+(195, 2, 'G3'),
+(196, 2, 'G4'),
+(197, 2, 'G5'),
+(198, 2, 'G6'),
+(199, 2, 'G7'),
+(200, 2, 'G8'),
+(201, 2, 'G9'),
+(202, 2, 'G10'),
+(203, 2, 'G11'),
+(204, 2, 'G12'),
+(205, 2, 'H1'),
+(206, 2, 'H2'),
+(207, 2, 'H3'),
+(208, 2, 'H4'),
+(209, 2, 'H5'),
+(210, 2, 'H6'),
+(211, 2, 'H7'),
+(212, 2, 'H8'),
+(213, 2, 'H9'),
+(214, 2, 'H10'),
+(215, 2, 'H11'),
+(216, 2, 'H12'),
+(217, 2, 'I1'),
+(218, 2, 'I2'),
+(219, 2, 'I3'),
+(220, 2, 'I4'),
+(221, 2, 'I5'),
+(222, 2, 'I6'),
+(223, 2, 'I7'),
+(224, 2, 'I8'),
+(225, 2, 'I9'),
+(226, 2, 'I10'),
+(227, 2, 'I11'),
+(228, 2, 'I12'),
+(229, 2, 'J1'),
+(230, 2, 'J2'),
+(231, 2, 'J3'),
+(232, 2, 'J4'),
+(233, 2, 'J5'),
+(234, 2, 'J6'),
+(235, 2, 'J7'),
+(236, 2, 'J8'),
+(237, 2, 'J9'),
+(238, 2, 'J10'),
+(239, 2, 'J11'),
+(240, 2, 'J12'),
+(241, 3, 'A1'),
+(242, 3, 'A2'),
+(243, 3, 'A3'),
+(244, 3, 'A4'),
+(245, 3, 'A5'),
+(246, 3, 'A6'),
+(247, 3, 'A7'),
+(248, 3, 'A8'),
+(249, 3, 'A9'),
+(250, 3, 'A10'),
+(251, 3, 'B1'),
+(252, 3, 'B2'),
+(253, 3, 'B3'),
+(254, 3, 'B4'),
+(255, 3, 'B5'),
+(256, 3, 'B6'),
+(257, 3, 'B7'),
+(258, 3, 'B8'),
+(259, 3, 'B9'),
+(260, 3, 'B10'),
+(261, 3, 'C1'),
+(262, 3, 'C2'),
+(263, 3, 'C3'),
+(264, 3, 'C4'),
+(265, 3, 'C5'),
+(266, 3, 'C6'),
+(267, 3, 'C7'),
+(268, 3, 'C8'),
+(269, 3, 'C9'),
+(270, 3, 'C10'),
+(271, 3, 'D1'),
+(272, 3, 'D2'),
+(273, 3, 'D3'),
+(274, 3, 'D4'),
+(275, 3, 'D5'),
+(276, 3, 'D6'),
+(277, 3, 'D7'),
+(278, 3, 'D8'),
+(279, 3, 'D9'),
+(280, 3, 'D10'),
+(281, 3, 'E1'),
+(282, 3, 'E2'),
+(283, 3, 'E3'),
+(284, 3, 'E4'),
+(285, 3, 'E5'),
+(286, 3, 'E6'),
+(287, 3, 'E7'),
+(288, 3, 'E8'),
+(289, 3, 'E9'),
+(290, 3, 'E10'),
+(291, 3, 'F1'),
+(292, 3, 'F2'),
+(293, 3, 'F3'),
+(294, 3, 'F4'),
+(295, 3, 'F5'),
+(296, 3, 'F6'),
+(297, 3, 'F7'),
+(298, 3, 'F8'),
+(299, 3, 'F9'),
+(300, 3, 'F10'),
+(301, 3, 'G1'),
+(302, 3, 'G2'),
+(303, 3, 'G3'),
+(304, 3, 'G4'),
+(305, 3, 'G5'),
+(306, 3, 'G6'),
+(307, 3, 'G7'),
+(308, 3, 'G8'),
+(309, 3, 'G9'),
+(310, 3, 'G10'),
+(311, 3, 'H1'),
+(312, 3, 'H2'),
+(313, 3, 'H3'),
+(314, 3, 'H4'),
+(315, 3, 'H5'),
+(316, 3, 'H6'),
+(317, 3, 'H7'),
+(318, 3, 'H8'),
+(319, 3, 'H9'),
+(320, 3, 'H10'),
+(321, 3, 'I1'),
+(322, 3, 'I2'),
+(323, 3, 'I3'),
+(324, 3, 'I4'),
+(325, 3, 'I5'),
+(326, 3, 'I6'),
+(327, 3, 'I7'),
+(328, 3, 'I8'),
+(329, 3, 'I9'),
+(330, 3, 'I10'),
+(331, 3, 'J1'),
+(332, 3, 'J2'),
+(333, 3, 'J3'),
+(334, 3, 'J4'),
+(335, 3, 'J5'),
+(336, 3, 'J6'),
+(337, 3, 'J7'),
+(338, 3, 'J8'),
+(339, 3, 'J9'),
+(340, 3, 'J10'),
+(341, 4, 'A1'),
+(342, 4, 'A2'),
+(343, 4, 'A3'),
+(344, 4, 'A4'),
+(345, 4, 'A5'),
+(346, 4, 'A6'),
+(347, 4, 'A7'),
+(348, 4, 'A8'),
+(349, 4, 'A9'),
+(350, 4, 'A10'),
+(351, 4, 'A11'),
+(352, 4, 'A12'),
+(353, 4, 'A13'),
+(354, 4, 'B1'),
+(355, 4, 'B2'),
+(356, 4, 'B3'),
+(357, 4, 'B4'),
+(358, 4, 'B5'),
+(359, 4, 'B6'),
+(360, 4, 'B7'),
+(361, 4, 'B8'),
+(362, 4, 'B9'),
+(363, 4, 'B10'),
+(364, 4, 'B11'),
+(365, 4, 'B12'),
+(366, 4, 'B13'),
+(367, 4, 'C1'),
+(368, 4, 'C2'),
+(369, 4, 'C3'),
+(370, 4, 'C4'),
+(371, 4, 'C5'),
+(372, 4, 'C6'),
+(373, 4, 'C7'),
+(374, 4, 'C8'),
+(375, 4, 'C9'),
+(376, 4, 'C10'),
+(377, 4, 'C11'),
+(378, 4, 'C12'),
+(379, 4, 'C13'),
+(380, 4, 'D1'),
+(381, 4, 'D2'),
+(382, 4, 'D3'),
+(383, 4, 'D4'),
+(384, 4, 'D5'),
+(385, 4, 'D6'),
+(386, 4, 'D7'),
+(387, 4, 'D8'),
+(388, 4, 'D9'),
+(389, 4, 'D10'),
+(390, 4, 'D11'),
+(391, 4, 'D12'),
+(392, 4, 'D13'),
+(393, 4, 'E1'),
+(394, 4, 'E2'),
+(395, 4, 'E3'),
+(396, 4, 'E4'),
+(397, 4, 'E5'),
+(398, 4, 'E6'),
+(399, 4, 'E7'),
+(400, 4, 'E8'),
+(401, 4, 'E9'),
+(402, 4, 'E10'),
+(403, 4, 'E11'),
+(404, 4, 'E12'),
+(405, 4, 'E13'),
+(406, 4, 'F1'),
+(407, 4, 'F2'),
+(408, 4, 'F3'),
+(409, 4, 'F4'),
+(410, 4, 'F5'),
+(411, 4, 'F6'),
+(412, 4, 'F7'),
+(413, 4, 'F8'),
+(414, 4, 'F9'),
+(415, 4, 'F10'),
+(416, 4, 'F11'),
+(417, 4, 'F12'),
+(418, 4, 'F13'),
+(419, 4, 'G1'),
+(420, 4, 'G2'),
+(421, 4, 'G3'),
+(422, 4, 'G4'),
+(423, 4, 'G5'),
+(424, 4, 'G6'),
+(425, 4, 'G7'),
+(426, 4, 'G8'),
+(427, 4, 'G9'),
+(428, 4, 'G10'),
+(429, 4, 'G11'),
+(430, 4, 'G12'),
+(431, 4, 'G13'),
+(432, 4, 'H1'),
+(433, 4, 'H2'),
+(434, 4, 'H3'),
+(435, 4, 'H4'),
+(436, 4, 'H5'),
+(437, 4, 'H6'),
+(438, 4, 'H7'),
+(439, 4, 'H8'),
+(440, 4, 'H9'),
+(441, 4, 'H10'),
+(442, 4, 'H11'),
+(443, 4, 'H12'),
+(444, 4, 'H13'),
+(445, 4, 'I1'),
+(446, 4, 'I2'),
+(447, 4, 'I3'),
+(448, 4, 'I4'),
+(449, 4, 'I5'),
+(450, 4, 'I6'),
+(451, 4, 'I7'),
+(452, 4, 'I8'),
+(453, 4, 'I9'),
+(454, 4, 'I10'),
+(455, 4, 'I11'),
+(456, 4, 'I12'),
+(457, 4, 'I13'),
+(458, 4, 'J1'),
+(459, 4, 'J2'),
+(460, 4, 'J3'),
+(461, 4, 'J4'),
+(462, 4, 'J5'),
+(463, 4, 'J6'),
+(464, 4, 'J7'),
+(465, 4, 'J8'),
+(466, 4, 'J9'),
+(467, 4, 'J10'),
+(468, 4, 'J11'),
+(469, 4, 'J12'),
+(470, 4, 'J13');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `pemesanan_faris`
+--
+
+CREATE TABLE `pemesanan_faris` (
+  `id_pemesanan_faris` int(11) NOT NULL,
+  `id_user_faris` int(11) NOT NULL,
+  `id_jadwal_faris` int(11) NOT NULL,
+  `total_harga_faris` decimal(10,0) NOT NULL,
+  `status_bayar_faris` enum('belum','menunggu','lunas','ditolak') DEFAULT 'belum',
+  `bukti_bayar_faris` varchar(255) DEFAULT NULL,
+  `created_at_faris` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `pemesanan_faris`
+--
+
+INSERT INTO `pemesanan_faris` (`id_pemesanan_faris`, `id_user_faris`, `id_jadwal_faris`, `total_harga_faris`, `status_bayar_faris`, `bukti_bayar_faris`, `created_at_faris`) VALUES
+(1, 3, 2, 70000, 'lunas', 'bukti_faris_1_e317a2b8d11f3dbd0dae4cbd19fb6f67.jpg', '2026-04-16 14:53:27');
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `teater_faris`
+--
+
+CREATE TABLE `teater_faris` (
+  `id_teater_faris` int(11) NOT NULL,
+  `nama_teater_faris` varchar(100) NOT NULL,
+  `kapasitas_faris` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `teater_faris`
+--
+
+INSERT INTO `teater_faris` (`id_teater_faris`, `nama_teater_faris`, `kapasitas_faris`) VALUES
+(1, 'Studio 1', 120),
+(2, 'Studio 2', 120),
+(3, 'Studio 3', 100),
+(4, 'Studio 4 - IMAX', 130);
+
+-- --------------------------------------------------------
+
+--
+-- Struktur dari tabel `user_faris`
+--
+
+CREATE TABLE `user_faris` (
+  `id_user_faris` int(11) NOT NULL,
+  `nama_faris` varchar(100) NOT NULL,
+  `email_faris` varchar(100) NOT NULL,
+  `password_faris` varchar(255) NOT NULL,
+  `no_hp_faris` varchar(20) DEFAULT NULL,
+  `role_faris` enum('pengguna','pengelola','admin') DEFAULT 'pengguna',
+  `created_at_faris` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data untuk tabel `user_faris`
+--
+
+INSERT INTO `user_faris` (`id_user_faris`, `nama_faris`, `email_faris`, `password_faris`, `no_hp_faris`, `role_faris`, `created_at_faris`) VALUES
+(1, 'Admin CGV', 'admin@cgv.com', 'admin123', NULL, 'admin', '2026-04-16 14:11:19'),
+(2, 'Pengelola 1', 'pengelola@cgv.com', 'kelola123', NULL, 'pengelola', '2026-04-16 14:11:19'),
+(3, 'apa', 'apa@gmail.com', 'apa', '5352345345', 'pengguna', '2026-04-16 14:52:11');
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indeks untuk tabel `detail_pemesanan_faris`
+--
+ALTER TABLE `detail_pemesanan_faris`
+  ADD PRIMARY KEY (`id_detail_faris`),
+  ADD KEY `id_pemesanan_faris` (`id_pemesanan_faris`),
+  ADD KEY `id_kursi_faris` (`id_kursi_faris`);
+
+--
+-- Indeks untuk tabel `film_faris`
+--
+ALTER TABLE `film_faris`
+  ADD PRIMARY KEY (`id_film_faris`);
+
+--
+-- Indeks untuk tabel `jadwal_faris`
+--
+ALTER TABLE `jadwal_faris`
+  ADD PRIMARY KEY (`id_jadwal_faris`),
+  ADD KEY `id_film_faris` (`id_film_faris`),
+  ADD KEY `id_teater_faris` (`id_teater_faris`);
+
+--
+-- Indeks untuk tabel `kursi_faris`
+--
+ALTER TABLE `kursi_faris`
+  ADD PRIMARY KEY (`id_kursi_faris`),
+  ADD KEY `id_teater_faris` (`id_teater_faris`);
+
+--
+-- Indeks untuk tabel `pemesanan_faris`
+--
+ALTER TABLE `pemesanan_faris`
+  ADD PRIMARY KEY (`id_pemesanan_faris`),
+  ADD KEY `id_user_faris` (`id_user_faris`),
+  ADD KEY `id_jadwal_faris` (`id_jadwal_faris`);
+
+--
+-- Indeks untuk tabel `teater_faris`
+--
+ALTER TABLE `teater_faris`
+  ADD PRIMARY KEY (`id_teater_faris`);
+
+--
+-- Indeks untuk tabel `user_faris`
+--
+ALTER TABLE `user_faris`
+  ADD PRIMARY KEY (`id_user_faris`),
+  ADD UNIQUE KEY `email_faris` (`email_faris`);
+
+--
+-- AUTO_INCREMENT untuk tabel yang dibuang
+--
+
+--
+-- AUTO_INCREMENT untuk tabel `detail_pemesanan_faris`
+--
+ALTER TABLE `detail_pemesanan_faris`
+  MODIFY `id_detail_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT untuk tabel `film_faris`
+--
+ALTER TABLE `film_faris`
+  MODIFY `id_film_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT untuk tabel `jadwal_faris`
+--
+ALTER TABLE `jadwal_faris`
+  MODIFY `id_jadwal_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT untuk tabel `kursi_faris`
+--
+ALTER TABLE `kursi_faris`
+  MODIFY `id_kursi_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=471;
+
+--
+-- AUTO_INCREMENT untuk tabel `pemesanan_faris`
+--
+ALTER TABLE `pemesanan_faris`
+  MODIFY `id_pemesanan_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT untuk tabel `teater_faris`
+--
+ALTER TABLE `teater_faris`
+  MODIFY `id_teater_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT untuk tabel `user_faris`
+--
+ALTER TABLE `user_faris`
+  MODIFY `id_user_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
+--
+
+--
+-- Ketidakleluasaan untuk tabel `detail_pemesanan_faris`
+--
+ALTER TABLE `detail_pemesanan_faris`
+  ADD CONSTRAINT `detail_pemesanan_faris_ibfk_1` FOREIGN KEY (`id_pemesanan_faris`) REFERENCES `pemesanan_faris` (`id_pemesanan_faris`),
+  ADD CONSTRAINT `detail_pemesanan_faris_ibfk_2` FOREIGN KEY (`id_kursi_faris`) REFERENCES `kursi_faris` (`id_kursi_faris`);
+
+--
+-- Ketidakleluasaan untuk tabel `jadwal_faris`
+--
+ALTER TABLE `jadwal_faris`
+  ADD CONSTRAINT `jadwal_faris_ibfk_1` FOREIGN KEY (`id_film_faris`) REFERENCES `film_faris` (`id_film_faris`),
+  ADD CONSTRAINT `jadwal_faris_ibfk_2` FOREIGN KEY (`id_teater_faris`) REFERENCES `teater_faris` (`id_teater_faris`);
+
+--
+-- Ketidakleluasaan untuk tabel `kursi_faris`
+--
+ALTER TABLE `kursi_faris`
+  ADD CONSTRAINT `kursi_faris_ibfk_1` FOREIGN KEY (`id_teater_faris`) REFERENCES `teater_faris` (`id_teater_faris`);
+
+--
+-- Ketidakleluasaan untuk tabel `pemesanan_faris`
+--
+ALTER TABLE `pemesanan_faris`
+  ADD CONSTRAINT `pemesanan_faris_ibfk_1` FOREIGN KEY (`id_user_faris`) REFERENCES `user_faris` (`id_user_faris`),
+  ADD CONSTRAINT `pemesanan_faris_ibfk_2` FOREIGN KEY (`id_jadwal_faris`) REFERENCES `jadwal_faris` (`id_jadwal_faris`);
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

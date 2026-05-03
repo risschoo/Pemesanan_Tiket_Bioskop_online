@@ -1,0 +1,63 @@
+{% extends 'base_faris.html' %}
+{% block title %}Data Pengguna{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fa-solid fa-users"></i> Data Pengguna</h2>
+    <a href="{{ url_for('admin_tambah_user_faris') }}" class="btn-submit" style="width:auto; padding:8px 20px;">
+        + Tambah User
+    </a>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>No</th>
+            <th>Nama</th>
+            <th>Email</th>
+            <th>No. HP</th>
+            <th>Role</th>
+            <th>Bergabung</th>
+            <th>Aksi</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u_faris in users_faris %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ u_faris['nama_faris'] }}</td>
+            <td>{{ u_faris['email_faris'] }}</td>
+            <td>{{ u_faris['no_hp_faris'] or '-' }}</td>
+            <td>
+                {% if u_faris['role_faris'] == 'admin' %}
+                <span class="badge badge-danger">Admin</span>
+                {% elif u_faris['role_faris'] == 'pengelola' %}
+                <span class="badge badge-warning">Pengelola</span>
+                {% else %}
+                <span class="badge badge-info">Pengguna</span>
+                {% endif %}
+            </td>
+            <td>{{ u_faris['created_at_faris'].strftime('%d-%m-%Y') }}</td>
+            <td style="display:flex; gap:6px;">
+                <a href="{{ url_for('admin_edit_user_faris', id_user_faris=u_faris['id_user_faris']) }}"
+                    class="btn-kecil btn-info">
+                    <i class="fa-solid fa-pen"></i> Edit
+                </a>
+                {% if u_faris['role_faris'] != 'admin' %}
+                <a href="{{ url_for('admin_hapus_user_faris', id_user_faris=u_faris['id_user_faris']) }}"
+                    class="btn-kecil btn-danger" onclick="return confirm('Yakin hapus user ini?')">
+                    <i class="fa-solid fa-trash"></i> Hapus
+                </a>
+                {% else %}
+                <span style="color:#aaa; font-size:11px;">Admin Utama</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="7" style="text-align:center; color:#aaa; padding:30px;">Belum ada data pengguna.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

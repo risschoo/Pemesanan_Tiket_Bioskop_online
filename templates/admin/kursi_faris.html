@@ -1,0 +1,65 @@
+{% extends 'base_faris.html' %}
+{% block title %}Kelola Kursi{% endblock %}
+
+{% block content %}
+<div class="section-title">
+    <h2><i class="fa-solid fa-chair"></i> Kelola Kursi per Teater</h2>
+</div>
+
+{% for teater in teaters_faris %}
+<div class="auth-box" style="max-width:100%; margin-bottom:30px;">
+    <h3 style="color:#cc0000; margin-bottom:18px;">
+        🏛️ {{ teater['nama_teater_faris'] }} 
+        <small style="font-size:12px; color:#888;">(Kapasitas: {{ teater['kapasitas_faris'] }} kursi)</small>
+    </h3>
+    
+    <!-- Form tambah kursi -->
+    <form method="POST" action="{{ url_for('admin_tambah_kursi_faris', id_teater_faris=teater['id_teater_faris']) }}" 
+          style="display:flex; gap:10px; align-items:flex-end; margin-bottom:20px;">
+        <div class="form-group" style="margin-bottom:0; flex:1;">
+            <label>Kode Kursi Baru</label>
+            <input type="text" name="kode_kursi_faris" placeholder="Contoh: Z12" required>
+        </div>
+        <button type="submit" class="btn-submit" style="width:auto; padding:10px 20px;">+ Tambah Kursi</button>
+    </form>
+    
+    <!-- Tabel kursi -->
+    <div style="max-height:300px; overflow-y:auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Kode Kursi</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for kursi in teater['kursi_faris'] %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ kursi['kode_kursi_faris'] }}</strong></td>
+                    <td>
+                        <a href="{{ url_for('admin_hapus_kursi_faris', id_kursi_faris=kursi['id_kursi_faris']) }}"
+                           class="btn-kecil btn-danger" onclick="return confirm('Yakin hapus kursi ini?')">
+                            Hapus
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" style="text-align:center; color:#aaa;">Belum ada kursi</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endfor %}
+
+<div class="menu-admin-faris">
+    <a href="{{ url_for('pengelola_teater_faris') }}" class="menu-card">
+        <span><i class="fa-solid fa-building"></i></span>
+        <p>Kelola Teater (Pengelola)</p>
+    </a>
+</div>
+{% endblock %}

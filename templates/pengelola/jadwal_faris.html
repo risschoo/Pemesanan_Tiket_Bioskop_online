@@ -1,0 +1,59 @@
+{% extends 'base_faris.html' %}
+{% block title %}Kelola Jadwal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="fa-regular fa-calendar"></i> Kelola Jadwal Tayang</h2>
+    <a href="{{ url_for('pengelola_tambah_jadwal_faris') }}" class="btn-submit" style="width:auto; padding:8px 20px;">
+        + Tambah Jadwal
+    </a>
+</div>
+
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>No</th>
+            <th>Film</th>
+            <th>Teater</th>
+            <th>Tanggal</th>
+            <th>Jam Mulai</th>
+            <th>Estimasi Selesai</th>
+            <th>Weekday</th>
+            <th>Weekend</th>
+            <th>Status</th>
+            <th>Aksi</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for j_faris in jadwals_faris %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ j_faris['judul_faris'] }} ({{ j_faris['durasi_faris'] }} menit)</td>
+            <td>{{ j_faris['nama_teater_faris'] }}</td>
+            <td>{{ j_faris['tanggal_faris'].strftime('%d-%m-%Y') }}</td>
+            <td>{{ j_faris['jam_tayang_faris'] | format_jam_faris }}</td>
+            <td>{{ j_faris['estimasi_selesai'] }}</td>
+            <td style="color:#007700;">Rp {{ "{:,.0f}".format(j_faris['harga_weekday_faris']) }}</td>
+            <td style="color:#cc0000;">Rp {{ "{:,.0f}".format(j_faris['harga_weekend_faris']) }}</td>
+            <td>
+                {% if j_faris['status_faris'] == 'tersedia' %}
+                <span class="badge badge-success">Tersedia</span>
+                {% else %}
+                <span class="badge badge-danger">Penuh</span>
+                {% endif %}
+            </td>
+            <td style="display:flex; gap:6px;">
+                <a href="{{ url_for('pengelola_edit_jadwal_faris', id_jadwal_faris=j_faris['id_jadwal_faris']) }}" 
+                   class="btn-kecil btn-info">Edit</a>
+                <a href="{{ url_for('pengelola_hapus_jadwal_faris', id_jadwal_faris=j_faris['id_jadwal_faris']) }}" 
+                   class="btn-kecil btn-danger" onclick="return confirm('Yakin hapus jadwal ini?')">Hapus</a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="10" style="text-align:center; color:#aaa; padding:30px;">Belum ada jadwal.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

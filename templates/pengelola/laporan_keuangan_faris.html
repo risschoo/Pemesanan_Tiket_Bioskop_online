@@ -1,0 +1,218 @@
+{% extends 'base_faris.html' %}
+{% block title %}Laporan Keuangan{% endblock %}
+
+{% block content %}
+<style>
+    .kop-surat {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #cc0000;
+    }
+
+    .periode-box {
+        background: #f5f5f5;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+
+    .print-btn {
+        margin-bottom: 20px;
+    }
+
+    .print-container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+    }
+
+    /* Style khusus untuk tabel di laporan (tidak pakai hover) */
+    .laporan-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    .laporan-table th {
+        background: #cc0000;
+        color: white;
+        padding: 12px;
+        text-align: left;
+        font-weight: bold;
+    }
+
+    .laporan-table td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .laporan-table tr:hover {
+        background: transparent !important;
+    }
+
+    /* SEMUA YANG ADA DI BAWAH INI HANYA MUNCUL SAAT CETAK */
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+
+        .print-only {
+            display: block !important;
+        }
+
+        body {
+            padding: 0;
+            margin: 0;
+        }
+
+        .print-container {
+            padding: 20px;
+            margin: 0;
+        }
+
+        /* Style tabel saat cetak */
+        .laporan-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .laporan-table th,
+        .laporan-table td {
+            border: 1px solid #000;
+            padding: 8px;
+        }
+
+        .laporan-table th {
+            background: #cc0000 !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .laporan-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+    }
+
+    /* YANG INI HANYA MUNCUL DI LAYAR, TIDAK SAAT CETAK */
+    @media screen {
+        .print-only {
+            display: none !important;
+        }
+    }
+
+    .grand-total {
+        text-align: right;
+        font-size: 18px;
+        font-weight: bold;
+        margin-top: 20px;
+        padding-top: 10px;
+        border-top: 2px solid #ccc;
+    }
+
+    .ttd {
+        margin-top: 40px;
+        text-align: right;
+    }
+</style>
+
+<div class="no-print">
+    <div class="periode-box">
+        <h3>Filter Laporan</h3>
+        <form method="GET" action="{{ url_for('pengelola_laporan_keuangan_faris') }}">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div class="form-group" style="flex:1;">
+                    <label>Dari Tanggal</label>
+                    <input type="date" name="start_date" value="{{ start_date }}" required>
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>Sampai Tanggal</label>
+                    <input type="date" name="end_date" value="{{ end_date }}" required>
+                </div>
+                <div class="form-group" style="align-self: flex-end;">
+                    <button type="submit" class="btn-kecil btn-info">Filter</button>
+                </div>
+            </div>
+        </form>
+
+        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="{{ url_for('pengelola_laporan_keuangan_faris', periode='hari') }}" class="btn-kecil"
+                style="background:#28a745;">Hari Ini</a>
+            <a href="{{ url_for('pengelola_laporan_keuangan_faris', periode='bulan') }}" class="btn-kecil"
+                style="background:#17a2b8;">Bulan Ini</a>
+            <a href="{{ url_for('pengelola_laporan_keuangan_faris', periode='tahun') }}" class="btn-kecil"
+                style="background:#ffc107;">Tahun Ini</a>
+            <a href="{{ url_for('pengelola_laporan_keuangan_faris') }}" class="btn-kecil"
+                style="background:#6c757d;">Semua</a>
+        </div>
+    </div>
+
+    <div class="print-btn">
+        <button onclick="window.print()" class="btn-submit" style="width:auto; padding:10px 20px;">
+            <i class="fa-solid fa-print"></i> Cetak Laporan
+        </button>
+    </div>
+</div>
+
+<!-- BAGIAN INI AKAN DICETAK -->
+<div class="print-container">
+    <div class="kop-surat">
+        <div style="text-align: center;">
+            <div style="font-size: 28px; font-weight: bold; color: #cc0000;">🎬 CGV CINEMAS</div>
+            <div style="font-size: 12px; color: #888;">Jl. Raya Bioskop No. 123, Jakarta</div>
+            <div style="font-size: 12px; color: #888;">Telp: (021) 1234567 | Email: info@cgv.com</div>
+        </div>
+        <h2 style="text-align: center; margin-top: 20px;">LAPORAN KEUANGAN</h2>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <p><strong>Periode Laporan:</strong> {{ periode_text }}</p>
+        <p><strong>Tanggal Cetak:</strong> {{ now_date }}</p>
+    </div>
+
+    <!-- TABEL KHUSUS LAPORAN (TANPA HOVER) -->
+    <table class="laporan-table">
+        <thead>
+            <tr>
+                <th>No</th>
+                <th>Tanggal Transaksi</th>
+                <th>Nama Pembeli</th>
+                <th>Film</th>
+                <th>Teater</th>
+                <th>Total Bayar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for l_faris in laporan_faris %}
+            <tr>
+                <td style="text-align:center;">{{ loop.index }}</td>
+                <td>{{ l_faris['created_at_faris'].strftime('%d-%m-%Y %H:%M') }}</td>
+                <td>{{ l_faris['nama_faris'] }}</td>
+                <td>{{ l_faris['judul_faris'] }}</td>
+                <td>{{ l_faris['nama_teater_faris'] }}</td>
+                <td style="font-weight:bold;">Rp {{ "{:,.0f}".format(l_faris['total_harga_faris']) }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align:center; padding:30px;">Belum ada data transaksi.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- BAGIAN INI HANYA MUNCUL SAAT CETAK (PRINT ONLY) -->
+    <div class="print-only">
+        <div class="grand-total">
+            <span style="font-size: 16px;">Grand Total :</span>
+            <span style="font-size: 24px; color: #cc0000;">Rp {{ "{:,.0f}".format(grand_total) }}</span>
+        </div>
+
+        <div class="ttd">
+            <p>Mengetahui,</p>
+            <p style="margin-top: 40px;">Pengelola</p>
+            <p style="margin-top: 10px;"><strong>{{ session.get('nama_faris', '_________________') }}</strong></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

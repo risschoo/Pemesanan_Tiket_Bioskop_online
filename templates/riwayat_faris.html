@@ -1,0 +1,174 @@
+{% extends 'base_faris.html' %}
+{% block title %}Tiket Saya{% endblock %}
+
+{% block content %}
+<div class="section-title">
+    <h2><i class="fa-solid fa-ticket"></i> Tiket Saya</h2>
+    <p>Riwayat pemesanan tiket Anda</p>
+</div>
+
+{% if pemesanans_faris %}
+<div class="riwayat-list">
+    {% for p_faris in pemesanans_faris %}
+    <div class="riwayat-item" style="border-left: 4px solid 
+        {% if p_faris['status_bayar_faris'] == 'lunas' %} #28a745
+        {% elif p_faris['status_bayar_faris'] in ['pending', 'menunggu'] %} #ffc107
+        {% elif p_faris['status_bayar_faris'] == 'ditolak' %} #dc3545
+        {% else %} #6c757d {% endif %};">
+
+        <div class="riwayat-info" style="flex:2;">
+            <h3><i class="fa-solid fa-clapperboard"></i> {{ p_faris['judul_faris'] }}</h3>
+            <p><i class="fa-regular fa-calendar"></i> {{ p_faris['tanggal_faris'].strftime('%d %B %Y') }}
+                &nbsp;|&nbsp; <i class="fa-regular fa-clock"></i> {{ p_faris['jam_tayang_faris'] | format_jam_faris }}
+                &nbsp;|&nbsp; <i class="fa-solid fa-building"></i> {{ p_faris['nama_teater_faris'] }}
+            </p>
+            <p><i class="fa-solid fa-money-bill-wave"></i> Total:
+                <strong style="color:#cc0000;">Rp {{ "{:,.0f}".format(p_faris['total_harga_faris']) }}</strong>
+            </p>
+            <p style="font-size:11px; color:#aaa; margin-top:5px;">
+                <i class="fa-regular fa-clock"></i> Dipesan: {{ p_faris['created_at_faris'].strftime('%d-%m-%Y %H:%M')
+                }}
+            </p>
+        </div>
+
+        <div class="riwayat-status" style="text-align:right; min-width:150px;">
+
+            {% if p_faris['status_bayar_faris'] == 'pending' %}
+            <span class="badge badge-warning" style="background:#ffc107; color:#333;">
+                <i class="fa-solid fa-hourglass-half"></i> Menunggu Pembayaran
+            </span>
+            <a href="{{ url_for('check_status_faris', id_pemesanan_faris=p_faris['id_pemesanan_faris']) }}"
+                class="btn-kecil" style="margin-top:8px; background:#17a2b8;">
+                <i class="fa-solid fa-rotate"></i> Cek Status
+            </a>
+
+            {% elif p_faris['status_bayar_faris'] == 'lunas' %}
+            <span class="badge badge-success" style="background:#28a745;">
+                <i class="fa-solid fa-circle-check"></i> LUNAS ✓
+            </span>
+            <a href="{{ url_for('struk_faris', id_pemesanan_faris=p_faris['id_pemesanan_faris']) }}" class="btn-kecil"
+                style="margin-top:8px; background:#28a745;" target="_blank">
+                <i class="fa-solid fa-print"></i> Cetak Tiket
+            </a>
+
+            {% elif p_faris['status_bayar_faris'] == 'ditolak' %}
+            <span class="badge badge-danger" style="background:#dc3545;">
+                <i class="fa-solid fa-circle-xmark"></i> Ditolak
+            </span>
+            <a href="{{ url_for('pay_faris', id_pemesanan_faris=p_faris['id_pemesanan_faris']) }}" class="btn-kecil"
+                style="margin-top:8px; background:#dc3545;">
+                <i class="fa-solid fa-rotate-left"></i> Pesan Ulang
+            </a>
+
+            {% else %}
+            <span class="badge badge-secondary">Status: {{ p_faris['status_bayar_faris'] }}</span>
+            {% endif %}
+
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div style="text-align:center; padding:60px 20px; color:#aaa;">
+    <i class="fa-solid fa-ticket" style="font-size:55px; margin-bottom:16px; display:block; color:#ddd;"></i>
+    <p style="font-size:16px; margin-bottom:12px;">Belum ada tiket.</p>
+    <a href="{{ url_for('index_faris') }}" class="btn-pesan"
+        style="display:inline-block; width:auto; padding:10px 24px;">
+        <i class="fa-solid fa-ticket"></i> Pesan Tiket Sekarang
+    </a>
+</div>
+{% endif %}
+
+<style>
+    .riwayat-item {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+    }
+
+    .riwayat-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .riwayat-info h3 {
+        font-size: 18px;
+        color: #cc0000;
+        margin-bottom: 8px;
+    }
+
+    .riwayat-info p {
+        font-size: 14px;
+        color: #555;
+        margin-bottom: 5px;
+    }
+
+    .riwayat-status {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 5px;
+    }
+
+    .badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: bold;
+    }
+
+    .btn-kecil {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: bold;
+        text-decoration: none;
+        color: white;
+        transition: all 0.2s;
+    }
+
+    .btn-kecil:hover {
+        transform: translateY(-2px);
+        opacity: 0.9;
+    }
+
+    .btn-kecil {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: bold;
+        text-decoration: none;
+        color: white;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .btn-kecil:hover {
+        transform: translateY(-2px);
+        opacity: 0.9;
+    }
+
+    @media (max-width: 700px) {
+        .riwayat-item {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .riwayat-status {
+            align-items: flex-start;
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}

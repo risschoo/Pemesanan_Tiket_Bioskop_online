@@ -1,0 +1,97 @@
+{% extends 'base_faris.html' %}
+{% block title %}Pembayaran{% endblock %}
+
+{% block content %}
+<div class="auth-box" style="max-width:600px;">
+    <h2><i class="fa-solid fa-credit-card"></i> Pembayaran Tiket</h2>
+    
+    <div class="ringkasan-pesan" style="margin-bottom:20px; text-align:center;">
+        <p style="font-size:16px; margin-bottom:10px;">
+            <strong>Total yang harus dibayar:</strong>
+        </p>
+        <p style="font-size:32px; color:#cc0000; font-weight:bold;">
+            Rp {{ "{:,.0f}".format(total_harga) }}
+        </p>
+    </div>
+    
+    <div id="payment-button-container" style="text-align:center;">
+        <button id="pay-button" class="btn-submit" style="width:100%; padding:14px;">
+            <i class="fa-solid fa-money-bill-wave"></i> Bayar Sekarang
+        </button>
+    </div>
+    
+    <p style="text-align:center; color:#888; font-size:12px; margin-top:16px;">
+        <i class="fa-solid fa-lock"></i> Pembayaran aman dengan Midtrans<br>
+        Metode: Bank Transfer, QRIS, GoPay, ShopeePay
+    </p>
+    
+    <div id="payment-status" style="text-align:center; margin-top:16px;"></div>
+</div>
+
+<!-- Midtrans Snap.js -->
+<script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ midtrans_client_key }}"></script>
+
+<script>
+    var payButton = document.getElementById('pay-button');
+    var snapToken = '{{ snap_token }}';
+    var idPemesanan = {{ id_pemesanan_faris }};
+    var paymentWindow = null;
+    
+    // Cek apakah token valid (opsional: bisa ditambahkan timeout)
+    if (!snapToken || snapToken === 'None' || snapToken === '') {
+        document.getElementById('payment-status').innerHTML = 
+            '<div class="alert alert-danger">❌ Token pembayaran tidak valid. <a href="/riwayat_faris">Kembali ke riwayat</a></div>';
+        payButton.disabled = true;
+        payButton.style.opacity = '0.5';
+        payButton.style.cursor = 'not-allowed';
+    }
+    
+    if (payButton && snapToken && snapToken !== 'None') {
+        payButton.addEventListener('click', function() {
+            // Disable button saat diproses
+            payButton.disabled = true;
+            payButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Memproses...';
+            
+            snap.pay(snapToken, {
+                onSuccess: function(result) {
+                    console.log('Success:', result);
+                    document.getElementById('payment-status').innerHTML = 
+                        '<div class="alert alert-success" style="background:#d4edda; color:#155724; padding:12px; border-radius:8px;">' +
+                        '✅ Pembayaran berhasil! Redirecting ke halaman tiket...</div>';
+                    
+                    setTimeout(function() {
+                        window.location.href = '/riwayat_faris';
+                    }, 2000);
+                },
+                onPending: function(result) {
+                    console.log('Pending:', result);
+                    document.getElementById('payment-status').innerHTML = 
+                        '<div class="alert alert-warning" style="background:#fff3cd; color:#856404; padding:12px; border-radius:8px;">' +
+                        '⏳ Menunggu pembayaran. Silakan selesaikan pembayaran Anda.</div>';
+                    
+                    setTimeout(function() {
+                        window.location.href = '/riwayat_faris';
+                    }, 3000);
+                },
+                onError: function(result) {
+                    console.log('Error:', result);
+                    document.getElementById('payment-status').innerHTML = 
+                        '<div class="alert alert-danger" style="background:#f8d7da; color:#721c24; padding:12px; border-radius:8px;">' +
+                        '❌ Pembayaran gagal. Silakan coba lagi. <a href="/check_status_faris/' + idPemesanan + '">Cek Status</a></div>';
+                    payButton.disabled = false;
+                    payButton.innerHTML = '<i class="fa-solid fa-money-bill-wave"></i> Bayar Sekarang';
+                },
+                onClose: function() {
+                    console.log('Customer closed the popup');
+                    payButton.disabled = false;
+                    payButton.innerHTML = '<i class="fa-solid fa-money-bill-wave"></i> Lanjutkan Bayar';
+                }
+            });
+        });
+    } else if (snapToken && snapToken !== 'None') {
+        console.error('Pay button not found');
+        document.getElementById('payment-status').innerHTML = 
+            '<div class="alert alert-danger">❌ Error memuat tombol pembayaran. <a href="/riwayat_faris">Kembali</a></div>';
+    }
+</script>
+{% endblock %}

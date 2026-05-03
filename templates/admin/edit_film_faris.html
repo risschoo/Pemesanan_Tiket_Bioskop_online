@@ -1,0 +1,85 @@
+{% extends 'base_faris.html' %}
+{% block title %}Edit Film{% endblock %}
+
+{% block content %}
+<div class="auth-box" style="max-width:580px;">
+    <h2>✏️ Edit Film</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label>Judul Film</label>
+            <input type="text" name="judul_faris" value="{{ film_faris['judul_faris'] }}" required>
+        </div>
+        <div class="form-group">
+            <label>Genre</label>
+            <input type="text" name="genre_faris" value="{{ film_faris['genre_faris'] }}">
+        </div>
+        <div class="form-group">
+            <label>Durasi(menit)</label>
+            <input type="number" name="durasi_faris" value="{{ film_faris['durasi_faris'] }}" min="1">
+        </div>
+        <div class="form-group">
+            <label>Rating</label>
+            <select name="rating_faris">
+                {% for r in ['SU','PG-13','13+','17+','21+'] %}
+                <option value="{{ r }}" {{ 'selected' if film_faris['rating_faris']==r }}>{{ r }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Sinopsis</label>
+            <textarea name="sinopsis_faris" rows="4">{{ film_faris['sinopsis_faris'] }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>URL Poster Film</label>
+            <input type="text" name="poster_faris" id="inputPoster" value="{{ film_faris['poster_faris'] or '' }}"
+                placeholder="https://... atau nama file: film.jpg">
+        </div>
+        <div id="poster-preview" style="margin-bottom:10px;">
+            {% if film_faris['poster_faris'] %}
+            {% if film_faris['poster_faris'].startswith('http') %}
+            <img id="preview-img" src="{{ film_faris['poster_faris'] }}" alt="poster"
+                style="max-height:160px; border-radius:6px; border:1px solid #ddd;">
+            {% else %}
+            <img id="preview-img" src="{{ url_for('static', filename='img/' + film_faris['poster_faris']) }}"
+                alt="poster" style="max-height:160px; border-radius:6px; border:1px solid #ddd;">
+            {% endif %}
+            {% else %}
+            <img id="preview-img" src="" alt=""
+                style="display:none; max-height:160px; border-radius:6px; border:1px solid #ddd;">
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label>YouTube Trailer ID</label>
+            <input type="text" name="trailer_url_faris" value="{{ film_faris['trailer_url_faris'] or '' }}"
+                placeholder="Contoh: dQw4w9WgXcQ">
+        </div>
+        <div class="form-group">
+            <label>Status</label>
+            <select name="status_faris">
+                <option value="tayang" {{ 'selected' if film_faris['status_faris']=='tayang' }}>Tayang</option>
+                <option value="tidak" {{ 'selected' if film_faris['status_faris']=='tidak' }}>Tidak Tayang</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-submit">Simpan Perubahan</button>
+        <a href="{{ url_for('admin_film_faris') }}"
+            style="display:block; text-align:center; margin-top:12px; color:#cc0000; font-size:13px;">
+            ← Kembali
+        </a>
+    </form>
+</div>
+
+<script>
+    var inputPoster = document.getElementById('inputPoster');
+    var previewImg = document.getElementById('preview-img');
+
+    inputPoster.addEventListener('input', function () {
+        var val = this.value.trim();
+        if (val.startsWith('http://') || val.startsWith('https://')) {
+            previewImg.src = val;
+            previewImg.style.display = 'block';
+        } else {
+            previewImg.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

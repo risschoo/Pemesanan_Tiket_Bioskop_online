@@ -1,0 +1,57 @@
+{% extends 'base_faris.html' %}
+{% block title %}Dashboard Admin{% endblock %}
+
+{% block content %}
+<div class="dashboard-header-faris">
+    <h2><i class="fa-solid fa-gauge"></i> Dashboard Admin</h2>
+    <p>Selamat datang! Kelola data master sistem di sini.</p>
+</div>
+
+<!-- Statistik Utama -->
+<div class="dashboard-stats-faris">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+        <div class="stat-number">{{ total_user_faris }}</div>
+        <div class="stat-label">Total Pengguna</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-clapperboard"></i></div>
+        <div class="stat-number">{{ total_film_faris }}</div>
+        <div class="stat-label">Film Tayang</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-ticket"></i></div>
+        <div class="stat-number">{{ total_pesan_faris }}</div>
+        <div class="stat-label">Total Pemesanan</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-number">{{ total_lunas_faris }}</div>
+        <div class="stat-label">Tiket Lunas</div>
+    </div>
+</div>
+
+<!-- Menu Admin -->
+<div class="menu-admin-faris" style="margin-top: 32px;">
+    <a href="{{ url_for('admin_film_faris') }}" class="menu-card">
+        <span><i class="fa-solid fa-clapperboard"></i></span>
+        <p>Kelola Film</p>
+    </a>
+    <a href="{{ url_for('admin_user_faris') }}" class="menu-card">
+        <span><i class="fa-solid fa-users"></i></span>
+        <p>Data Pengguna</p>
+    </a>
+    <a href="{{ url_for('admin_kursi_faris') }}" class="menu-card">
+        <span><i class="fa-solid fa-chair"></i></span>
+        <p>Kelola Kursi</p>
+    </a>
+    <a href="{{ url_for('admin_jadwal_faris') }}" class="menu-card">
+        <span><i class="fa-regular fa-calendar-days"></i></span>
+        <p>Lihat Jadwal</p>
+    </a>
+    <a href="{{ url_for('admin_keuangan_faris') }}" class="menu-card">
+        <span><i class="fa-solid fa-file-invoice-dollar"></i></span>
+        <p>Laporan Keuangan</p>
+    </a>
+</div>
+{% endblock %}

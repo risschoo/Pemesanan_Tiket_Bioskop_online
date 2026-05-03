@@ -1,0 +1,99 @@
+{% extends 'base_faris.html' %}
+{% block title %}Tambah Jadwal{% endblock %}
+
+{% block content %}
+<div class="auth-box" style="max-width:620px;">
+    <h2><i class="fa-solid fa-calendar-plus"></i> Tambah Jadwal Baru</h2>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label>Pilih Film</label>
+            <select name="id_film_faris" id="film_select" required>
+                <option value="">-- Pilih Film --</option>
+                {% for f_faris in films_faris %}
+                <option value="{{ f_faris['id_film_faris'] }}" data-durasi="{{ f_faris['durasi_faris'] }}">
+                    {{ f_faris['judul_faris'] }} ({{ f_faris['durasi_faris'] }} menit)
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Pilih Teater</label>
+            <select name="id_teater_faris" required>
+                <option value="">-- Pilih Teater --</option>
+                {% for t_faris in teaters_faris %}
+                <option value="{{ t_faris['id_teater_faris'] }}">
+                    {{ t_faris['nama_teater_faris'] }} ({{ t_faris['kapasitas_faris'] }} kursi)
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Tanggal Tayang (maksimal 4 hari ke depan)</label>
+            <input type="date" name="tanggal_faris" id="tanggal_input" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Jam Tayang</label>
+            <input type="time" name="jam_tayang_faris" id="jam_input" required>
+            <small id="info_selesai" style="color:#888; display:block; margin-top:5px;"></small>
+        </div>
+        
+        <div class="form-group">
+            <label>Harga Weekday (Senin - Jumat)</label>
+            <input type="number" name="harga_weekday_faris" value="35000" min="1000" required>
+        </div>
+        
+        <div class="form-group">
+            <label>Harga Weekend (Sabtu - Minggu)</label>
+            <input type="number" name="harga_weekend_faris" value="50000" min="1000" required>
+        </div>
+        
+        <button type="submit" class="btn-submit">Simpan Jadwal</button>
+        <a href="{{ url_for('pengelola_jadwal_faris') }}" class="btn-kecil" style="display:block; text-align:center; margin-top:12px; background:#6c757d;">
+            ← Kembali
+        </a>
+    </form>
+</div>
+
+<script>
+    // Hitung estimasi selesai
+    const filmSelect = document.getElementById('film_select');
+    const jamInput = document.getElementById('jam_input');
+    const infoSelesai = document.getElementById('info_selesai');
+
+    function hitungEstimasi() {
+        const selectedOption = filmSelect.options[filmSelect.selectedIndex];
+        const durasi = selectedOption ? selectedOption.getAttribute('data-durasi') : null;
+        const jamMulai = jamInput.value;
+        
+        if (durasi && jamMulai) {
+            const [jam, menit] = jamMulai.split(':').map(Number);
+            let totalMenit = jam * 60 + menit + parseInt(durasi) + 10;
+            let jamSelesai = Math.floor(totalMenit / 60);
+            let menitSelesai = totalMenit % 60;
+            if (jamSelesai >= 24) {
+                jamSelesai -= 24;
+                infoSelesai.innerHTML = `<span style="color:#ff6600;">⚠️ Estimasi selesai: ${jamSelesai.toString().padStart(2,'0')}:${menitSelesai.toString().padStart(2,'0')} (keesokan hari)</span>`;
+            } else {
+                infoSelesai.innerHTML = `Estimasi selesai (+10 menit bersih): <strong>${jamSelesai.toString().padStart(2,'0')}:${menitSelesai.toString().padStart(2,'0')}</strong>`;
+            }
+        } else {
+            infoSelesai.innerHTML = '';
+        }
+    }
+
+    filmSelect.addEventListener('change', hitungEstimasi);
+    jamInput.addEventListener('change', hitungEstimasi);
+    
+    // Batasi tanggal maksimal 4 hari ke depan
+    const tanggalInput = document.getElementById('tanggal_input');
+    const today = new Date();
+    const maxDate = new Date();
+    maxDate.setDate(today.getDate() + 4);
+    tanggalInput.min = today.toISOString().split('T')[0];
+    tanggalInput.max = maxDate.toISOString().split('T')[0];
+</script>
+{% endblock %}
