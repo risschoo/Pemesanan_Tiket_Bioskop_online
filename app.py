@@ -19,7 +19,10 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER_FARIS
 if not os.path.exists(UPLOAD_FOLDER_FARIS):
     os.makedirs(UPLOAD_FOLDER_FARIS)
 
-# ==================== MIDTRANS CONFIGURATION ====================
+# Konfigurasi Midtrans
+MIDTRANS_SERVER_KEY = 'Mid-server-gMZxTVNEDZE4fbHnaz9qYv9T'
+MIDTRANS_CLIENT_KEY = 'Mid-client-PvwImZjz6-_b08sv'
+MIDTRANS_MERCHANT_ID = 'M670785059'
 MIDTRANS_IS_PRODUCTION = False
 
 snap = midtransclient.Snap(
@@ -34,7 +37,7 @@ core = midtransclient.CoreApi(
     client_key=MIDTRANS_CLIENT_KEY
 )
 
-# ==================== FUNGSI BANTUAN ====================
+# Fungsi Bantuan
 def get_db_faris():
     return mysql.connector.connect(
         host='localhost',
@@ -46,6 +49,7 @@ def get_db_faris():
 def allowed_file_faris(filename_faris):
     return '.' in filename_faris and filename_faris.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS_FARIS
 
+#buat ngerapihin format jam tayang di template
 def format_jam_faris(td_faris):
     if td_faris is None:
         return '-'
@@ -146,7 +150,7 @@ def create_midtrans_transaction(id_pemesanan_faris, total_harga, nama_user, emai
         print(f"Midtrans Error: {str(e)}")
         return None
 
-# Route Index
+# Halaman Index atau route index
 @app.route('/')
 def index_faris():
     keyword_faris = request.args.get('q_faris', '').strip()
@@ -165,67 +169,19 @@ def index_faris():
     db_faris.close()
     return render_template('index_faris.html', films_faris=films_faris, keyword_faris=keyword_faris)
 
-@app.route('/test_midtrans_faris')
-def test_midtrans_faris():
-    try:
-        test_order_id = f"TEST-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        test_param = {
-            "transaction_details": {
-                "order_id": test_order_id,
-                "gross_amount": 10000
-            },
-            "credit_card": {"secure": True},
-            "enabled_payments": ["bank_transfer", "gopay", "qris"]
-        }
-        response = snap.create_transaction(test_param)
-        return f"""
-        <html>
-        <head><title>Midtrans Test</title>
-        <style>
-            body{{font-family:Arial;padding:20px;}}
-            .success{{color:green;}}
-            .info{{background:#f0f0f0;padding:10px;border-radius:5px;}}
-            button{{background:#cc0000;color:white;padding:12px 24px;border:none;border-radius:5px;cursor:pointer;}}
-        </style>
-        </head>
-        <body>
-            <h2>🔧 Midtrans Connection Test</h2>
-            <p class="success">✅ Status: BERHASIL</p>
-            <div class="info">
-                <p>Merchant ID: {MIDTRANS_MERCHANT_ID}</p>
-                <p>Mode: Sandbox</p>
-                <p>Snap Token: <code>{response.get('token', 'TIDAK ADA')}</code></p>
-            </div>
-            <h3>📱 Test Payment Popup:</h3>
-            <button id="pay-button">Klik untuk Test Pembayaran</button>
-            <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{MIDTRANS_CLIENT_KEY}"></script>
-            <script>
-                document.getElementById('pay-button').onclick = function() {{
-                    snap.pay('{response.get('token')}');
-                }};
-            </script>
-            <p><a href="/">← Kembali ke Beranda</a></p>
-        </body>
-        </html>
-        """
-    except Exception as e:
-        return f"""
-        <html>
-        <body>
-            <h2>🔧 Midtrans Test</h2>
-            <p style="color:red">❌ GAGAL: {str(e)}</p>
-            <p><a href="/">← Kembali</a></p>
-        </body>
-        </html>
-        """
-
 @app.route('/register_faris', methods=['GET', 'POST'])
 def register_faris():
     if request.method == 'POST':
         nama_faris = request.form['nama_faris']
         email_faris = request.form['email_faris']
         password_faris = request.form['password_faris']
+        konfirmasi_password_faris = request.form['konfirmasi_password_faris']
         no_hp_faris = request.form['no_hp_faris']
+
+        if password_faris != konfirmasi_password_faris:
+            flash('Password dan konfirmasi password tidak cocok!', 'danger')
+            return render_template('register_faris.html')
+
         db_faris = get_db_faris()
         cur_faris = db_faris.cursor()
         try:
@@ -336,6 +292,7 @@ def pilih_kursi_faris(id_jadwal_faris):
     """, (id_jadwal_faris,))
     kursi_dipesan_faris = [r['id_kursi_faris'] for r in cur_faris.fetchall()]
 
+    #harga berdasarkan hari
     tanggal_faris = jadwal_faris['tanggal_faris']
     hari_faris = tanggal_faris.weekday()
     if hari_faris in [5, 6]:
@@ -347,8 +304,13 @@ def pilih_kursi_faris(id_jadwal_faris):
 
     total_kolom_faris = 0
     if semua_kursi_faris:
-        baris_pertama_faris = semua_kursi_faris[0]['kode_kursi_faris'][0]
-        total_kolom_faris = sum(1 for k in semua_kursi_faris if k['kode_kursi_faris'][0] == baris_pertama_faris)
+        for k in semua_kursi_faris:
+            try:
+                nomor_kolom = int(k['kode_kursi_faris'][1:])
+                if nomor_kolom > total_kolom_faris:
+                    total_kolom_faris = nomor_kolom
+            except ValueError:
+                continue
 
     db_faris.close()
     return render_template('pilih_kursi_faris.html',
@@ -464,7 +426,7 @@ def pay_faris(id_pemesanan_faris):
                           id_pemesanan_faris=id_pemesanan_faris,
                           total_harga=pemesanan['total_harga_faris'])
 
-# ==================== WEBHOOK MIDTRANS ====================
+# Webhook midtrans
 @app.route('/midtrans_notification', methods=['POST'])
 def midtrans_notification():
     try:
@@ -1205,34 +1167,50 @@ def pengelola_hapus_jadwal_faris(id_jadwal_faris):
     db_faris.close()
     return redirect(url_for('pengelola_jadwal_faris'))
 
-@app.route('/pengelola_faris/teater_faris', methods=['GET', 'POST'])
+@app.route('/pengelola_faris/teater_faris')
 def pengelola_teater_faris():
     if session.get('role_faris') != 'pengelola':
         return redirect(url_for('index_faris'))
     db_faris = get_db_faris()
     cur_faris = db_faris.cursor(dictionary=True)
-
-    if request.method == 'POST':
-        nama_faris = request.form['nama_teater_faris']
-        kapasitas_faris = int(request.form['kapasitas_faris'])
-        cur2_faris = db_faris.cursor()
-        cur2_faris.execute("INSERT INTO teater_faris (nama_teater_faris, kapasitas_faris) VALUES (%s,%s)", (nama_faris, kapasitas_faris))
-        db_faris.commit()
-        id_teater_faris = cur2_faris.lastrowid
-        
-        baris_faris = ['A','B','C','D','E','F','G','H','I','J']
-        per_baris_faris = max(1, kapasitas_faris // len(baris_faris))
-        for b_faris in baris_faris:
-            for i_faris in range(1, per_baris_faris + 1):
-                cur2_faris.execute("INSERT INTO kursi_faris (id_teater_faris, kode_kursi_faris) VALUES (%s,%s)",
-                             (id_teater_faris, f"{b_faris}{i_faris}"))
-        db_faris.commit()
-        flash('Teater berhasil ditambahkan!', 'success')
-
     cur_faris.execute("SELECT * FROM teater_faris")
     teaters_faris = cur_faris.fetchall()
     db_faris.close()
     return render_template('pengelola/teater_faris.html', teaters_faris=teaters_faris)
+
+@app.route('/pengelola_faris/teater_faris/tambah', methods=['GET', 'POST'])
+def pengelola_tambah_teater_faris():
+    if session.get('role_faris') != 'pengelola':
+        return redirect(url_for('index_faris'))
+    if request.method == 'POST':
+        nama_faris = request.form['nama_teater_faris']
+        kapasitas_faris = int(request.form['kapasitas_faris'])
+        db_faris = get_db_faris()
+        cur2_faris = db_faris.cursor()
+        cur2_faris.execute("INSERT INTO teater_faris (nama_teater_faris, kapasitas_faris) VALUES (%s,%s)", (nama_faris, kapasitas_faris))
+        db_faris.commit()
+        id_teater_faris = cur2_faris.lastrowid
+
+        huruf_baris_faris = [chr(i) for i in range(ord('A'), ord('Z') + 1)]
+        kursi_dibuat_faris = 0
+        baris_idx_faris = 0
+        nomor_kursi_faris = 1
+        while kursi_dibuat_faris < kapasitas_faris:
+            if baris_idx_faris >= len(huruf_baris_faris):
+                break
+            baris_huruf_faris = huruf_baris_faris[baris_idx_faris]
+            cur2_faris.execute("INSERT INTO kursi_faris (id_teater_faris, kode_kursi_faris) VALUES (%s,%s)",
+                         (id_teater_faris, f"{baris_huruf_faris}{nomor_kursi_faris}"))
+            kursi_dibuat_faris += 1
+            nomor_kursi_faris += 1
+            if nomor_kursi_faris > 20:
+                baris_idx_faris += 1
+                nomor_kursi_faris = 1
+        db_faris.commit()
+        db_faris.close()
+        flash('Teater berhasil ditambahkan!', 'success')
+        return redirect(url_for('pengelola_teater_faris'))
+    return render_template('pengelola/tambah_teater_faris.html')
 
 @app.route('/pengelola_faris/laporan_keuangan')
 def pengelola_laporan_keuangan_faris():

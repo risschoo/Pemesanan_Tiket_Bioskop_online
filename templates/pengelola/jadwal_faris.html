@@ -45,8 +45,6 @@
             <td style="display:flex; gap:6px;">
                 <a href="{{ url_for('pengelola_edit_jadwal_faris', id_jadwal_faris=j_faris['id_jadwal_faris']) }}" 
                    class="btn-kecil btn-info">Edit</a>
-                <a href="{{ url_for('pengelola_hapus_jadwal_faris', id_jadwal_faris=j_faris['id_jadwal_faris']) }}" 
-                   class="btn-kecil btn-danger" onclick="return confirm('Yakin hapus jadwal ini?')">Hapus</a>
             </td>
         </tr>
         {% else %}

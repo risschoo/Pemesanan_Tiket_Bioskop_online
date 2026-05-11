@@ -38,10 +38,6 @@
             <td style="display:flex; gap:6px;">
                 <a href="{{ url_for('admin_edit_film_faris', id_film_faris=f_faris['id_film_faris']) }}"
                     class="btn-kecil btn-info">Edit</a>
-                <a href="{{ url_for('admin_hapus_film_faris', id_film_faris=f_faris['id_film_faris']) }}"
-                    class="btn-kecil btn-danger" onclick="return confirm('Yakin hapus film ini?')">
-                    Hapus
-                </a>
             </td>
         </tr>
         {% else %}

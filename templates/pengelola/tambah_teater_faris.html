@@ -1,0 +1,27 @@
+{% extends 'base_faris.html' %}
+{% block title %}Tambah Teater{% endblock %}
+
+{% block content %}
+<div class="section-title">
+    <h2>➕ Tambah Teater Baru</h2>
+</div>
+
+<div class="auth-box" style="max-width:500px; margin-bottom:30px;">
+    <form method="POST">
+        <div class="form-group">
+            <label>Nama Teater</label>
+            <input type="text" name="nama_teater_faris" placeholder="Contoh: Studio 3" required>
+        </div>
+        <div class="form-group">
+            <label>Kapasitas Kursi</label>
+            <input type="number" name="kapasitas_faris" placeholder="Contoh: 120" min="1" required>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:10px;">
+            <button type="submit" class="btn-submit">💾 Simpan Teater</button>
+            <a href="{{ url_for('pengelola_teater_faris') }}" class="btn-submit" style="background:#888; text-decoration:none; text-align:center;">
+                ✖ Batal
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

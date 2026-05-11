@@ -3,7 +3,7 @@
 {% block content %}
 <div class="auth-box">
     <h2><i class="fa-solid fa-user-plus"></i> Daftar Akun</h2>
-    <form method="POST">
+    <form method="POST" id="form-register-faris">
         <div class="form-group">
             <label><i class="fa-solid fa-user"></i> Nama Lengkap</label>
             <input type="text" name="nama_faris" placeholder="Masukkan nama lengkap" required>
@@ -18,7 +18,12 @@
         </div>
         <div class="form-group">
             <label><i class="fa-solid fa-lock"></i> Password</label>
-            <input type="password" name="password_faris" placeholder="Buat password" required>
+            <input type="password" name="password_faris" id="password_faris" placeholder="Buat password" required>
+        </div>
+        <div class="form-group">
+            <label><i class="fa-solid fa-lock"></i> Konfirmasi Password</label>
+            <input type="password" name="konfirmasi_password_faris" id="konfirmasi_password_faris" placeholder="Ulangi password" required>
+            <small id="pesan-konfirmasi-faris" style="color: red; display: none;">Password tidak cocok!</small>
         </div>
         <button type="submit" class="btn-submit">
             <i class="fa-solid fa-user-plus"></i> Daftar Sekarang
@@ -26,4 +31,29 @@
     </form>
     <p class="auth-link">Sudah punya akun? <a href="{{ url_for('login_faris') }}">Login di sini</a></p>
 </div>
+
+<script>
+    const formFaris = document.getElementById('form-register-faris');
+    const passwordFaris = document.getElementById('password_faris');
+    const konfirmasiFaris = document.getElementById('konfirmasi_password_faris');
+    const pesanFaris = document.getElementById('pesan-konfirmasi-faris');
+
+    konfirmasiFaris.addEventListener('input', function () {
+        if (passwordFaris.value !== konfirmasiFaris.value) {
+            pesanFaris.style.display = 'block';
+            konfirmasiFaris.setCustomValidity('Password tidak cocok!');
+        } else {
+            pesanFaris.style.display = 'none';
+            konfirmasiFaris.setCustomValidity('');
+        }
+    });
+
+    formFaris.addEventListener('submit', function (e) {
+        if (passwordFaris.value !== konfirmasiFaris.value) {
+            e.preventDefault();
+            pesanFaris.style.display = 'block';
+            konfirmasiFaris.focus();
+        }
+    });
+</script>
 {% endblock %}

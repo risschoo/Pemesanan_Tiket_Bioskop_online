@@ -19,11 +19,6 @@ INSERT INTO `detail_pemesanan_faris` (`id_detail_faris`, `id_pemesanan_faris`, `
 (1, 1, 117),
 (2, 1, 118);
 
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `film_faris`
---
 
 CREATE TABLE `film_faris` (
   `id_film_faris` int(11) NOT NULL,
@@ -37,9 +32,6 @@ CREATE TABLE `film_faris` (
   `status_faris` enum('tayang','tidak') DEFAULT 'tayang'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data untuk tabel `film_faris`
---
 
 INSERT INTO `film_faris` (`id_film_faris`, `judul_faris`, `genre_faris`, `durasi_faris`, `rating_faris`, `sinopsis_faris`, `poster_faris`, `trailer_url_faris`, `status_faris`) VALUES
 (1, 'Avengers: Doomsday', 'Action, Sci-Fi', 150, 'PG-13', 'Para Avenger bersatu melawan ancaman terbesar yang pernah ada di alam semesta. Kali ini tidak semua pahlawan akan selamat.', 'https://preview.redd.it/avengers-doomsday-poster-featuring-the-confirmed-cast-so-v0-b8a68egs9n2f1.jpeg?width=640&crop=smart&auto=webp&s=6ee560e53f9d0b265abdf63d48ace4964d3c4555', 'Z8tZoagkbZk', 'tayang'),
@@ -48,11 +40,6 @@ INSERT INTO `film_faris` (`id_film_faris`, `judul_faris`, `genre_faris`, `durasi
 (4, 'Mission: Impossible 8', 'Action, Thriller', 163, 'PG-13', 'Ethan Hunt kembali beraksi dalam misi paling berbahaya sepanjang karirnya untuk menyelamatkan dunia.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS4Mm7oh1D1aNsAAlKYWUggqjaNTNpyrk02FA&s', 'fsQgc9pCyDU', 'tayang'),
 (5, 'The Dark Forest', 'Horror, Mystery', 110, '17+', 'Seorang fotografer tersesat di hutan angker dan menemukan rahasia mengerikan yang tersembunyi selama bertahun-tahun.', 'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/the-dark-forest-thriller-book-design-template-62f46d0d7e79e7d6feb02c3a1733b12a_screen.jpg?ts=1698536807', 'pcOgE6pudB8', 'tayang');
 
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `jadwal_faris`
---
 
 CREATE TABLE `jadwal_faris` (
   `id_jadwal_faris` int(11) NOT NULL,
@@ -64,19 +51,11 @@ CREATE TABLE `jadwal_faris` (
   `harga_weekend_faris` decimal(10,0) DEFAULT 50000
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data untuk tabel `jadwal_faris`
---
 
 INSERT INTO `jadwal_faris` (`id_jadwal_faris`, `id_film_faris`, `id_teater_faris`, `tanggal_faris`, `jam_tayang_faris`, `harga_weekday_faris`, `harga_weekend_faris`) VALUES
 (1, 1, 1, '2026-04-16', '21:28:00', 35000, 50000),
 (2, 2, 1, '2026-04-16', '21:52:00', 35000, 50000);
 
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `kursi_faris`
---
 
 CREATE TABLE `kursi_faris` (
   `id_kursi_faris` int(11) NOT NULL,
@@ -84,9 +63,6 @@ CREATE TABLE `kursi_faris` (
   `kode_kursi_faris` varchar(10) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data untuk tabel `kursi_faris`
---
 
 INSERT INTO `kursi_faris` (`id_kursi_faris`, `id_teater_faris`, `kode_kursi_faris`) VALUES
 (1, 1, 'A1'),
@@ -560,12 +536,6 @@ INSERT INTO `kursi_faris` (`id_kursi_faris`, `id_teater_faris`, `kode_kursi_fari
 (469, 4, 'J12'),
 (470, 4, 'J13');
 
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `pemesanan_faris`
---
-
 CREATE TABLE `pemesanan_faris` (
   `id_pemesanan_faris` int(11) NOT NULL,
   `id_user_faris` int(11) NOT NULL,
@@ -576,18 +546,10 @@ CREATE TABLE `pemesanan_faris` (
   `created_at_faris` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data untuk tabel `pemesanan_faris`
---
 
 INSERT INTO `pemesanan_faris` (`id_pemesanan_faris`, `id_user_faris`, `id_jadwal_faris`, `total_harga_faris`, `status_bayar_faris`, `bukti_bayar_faris`, `created_at_faris`) VALUES
 (1, 3, 2, 70000, 'lunas', 'bukti_faris_1_e317a2b8d11f3dbd0dae4cbd19fb6f67.jpg', '2026-04-16 14:53:27');
 
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `teater_faris`
---
 
 CREATE TABLE `teater_faris` (
   `id_teater_faris` int(11) NOT NULL,
@@ -595,9 +557,6 @@ CREATE TABLE `teater_faris` (
   `kapasitas_faris` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data untuk tabel `teater_faris`
---
 
 INSERT INTO `teater_faris` (`id_teater_faris`, `nama_teater_faris`, `kapasitas_faris`) VALUES
 (1, 'Studio 1', 120),
@@ -605,11 +564,6 @@ INSERT INTO `teater_faris` (`id_teater_faris`, `nama_teater_faris`, `kapasitas_f
 (3, 'Studio 3', 100),
 (4, 'Studio 4 - IMAX', 130);
 
--- --------------------------------------------------------
-
---
--- Struktur dari tabel `user_faris`
---
 
 CREATE TABLE `user_faris` (
   `id_user_faris` int(11) NOT NULL,
@@ -621,142 +575,73 @@ CREATE TABLE `user_faris` (
   `created_at_faris` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
---
--- Dumping data untuk tabel `user_faris`
---
 
 INSERT INTO `user_faris` (`id_user_faris`, `nama_faris`, `email_faris`, `password_faris`, `no_hp_faris`, `role_faris`, `created_at_faris`) VALUES
 (1, 'Admin CGV', 'admin@cgv.com', 'admin123', NULL, 'admin', '2026-04-16 14:11:19'),
 (2, 'Pengelola 1', 'pengelola@cgv.com', 'kelola123', NULL, 'pengelola', '2026-04-16 14:11:19'),
 (3, 'apa', 'apa@gmail.com', 'apa', '5352345345', 'pengguna', '2026-04-16 14:52:11');
 
---
--- Indexes for dumped tables
---
-
---
--- Indeks untuk tabel `detail_pemesanan_faris`
---
 ALTER TABLE `detail_pemesanan_faris`
   ADD PRIMARY KEY (`id_detail_faris`),
   ADD KEY `id_pemesanan_faris` (`id_pemesanan_faris`),
   ADD KEY `id_kursi_faris` (`id_kursi_faris`);
 
---
--- Indeks untuk tabel `film_faris`
---
 ALTER TABLE `film_faris`
   ADD PRIMARY KEY (`id_film_faris`);
 
---
--- Indeks untuk tabel `jadwal_faris`
---
 ALTER TABLE `jadwal_faris`
   ADD PRIMARY KEY (`id_jadwal_faris`),
   ADD KEY `id_film_faris` (`id_film_faris`),
   ADD KEY `id_teater_faris` (`id_teater_faris`);
 
---
--- Indeks untuk tabel `kursi_faris`
---
 ALTER TABLE `kursi_faris`
   ADD PRIMARY KEY (`id_kursi_faris`),
   ADD KEY `id_teater_faris` (`id_teater_faris`);
 
---
--- Indeks untuk tabel `pemesanan_faris`
---
 ALTER TABLE `pemesanan_faris`
   ADD PRIMARY KEY (`id_pemesanan_faris`),
   ADD KEY `id_user_faris` (`id_user_faris`),
   ADD KEY `id_jadwal_faris` (`id_jadwal_faris`);
 
---
--- Indeks untuk tabel `teater_faris`
---
 ALTER TABLE `teater_faris`
   ADD PRIMARY KEY (`id_teater_faris`);
 
---
--- Indeks untuk tabel `user_faris`
---
 ALTER TABLE `user_faris`
   ADD PRIMARY KEY (`id_user_faris`),
   ADD UNIQUE KEY `email_faris` (`email_faris`);
 
---
--- AUTO_INCREMENT untuk tabel yang dibuang
---
-
---
--- AUTO_INCREMENT untuk tabel `detail_pemesanan_faris`
---
 ALTER TABLE `detail_pemesanan_faris`
   MODIFY `id_detail_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
---
--- AUTO_INCREMENT untuk tabel `film_faris`
---
 ALTER TABLE `film_faris`
   MODIFY `id_film_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
---
--- AUTO_INCREMENT untuk tabel `jadwal_faris`
---
 ALTER TABLE `jadwal_faris`
   MODIFY `id_jadwal_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
---
--- AUTO_INCREMENT untuk tabel `kursi_faris`
---
 ALTER TABLE `kursi_faris`
   MODIFY `id_kursi_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=471;
 
---
--- AUTO_INCREMENT untuk tabel `pemesanan_faris`
---
 ALTER TABLE `pemesanan_faris`
   MODIFY `id_pemesanan_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
---
--- AUTO_INCREMENT untuk tabel `teater_faris`
---
 ALTER TABLE `teater_faris`
   MODIFY `id_teater_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
---
--- AUTO_INCREMENT untuk tabel `user_faris`
---
 ALTER TABLE `user_faris`
   MODIFY `id_user_faris` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
---
--- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
---
-
---
--- Ketidakleluasaan untuk tabel `detail_pemesanan_faris`
---
 ALTER TABLE `detail_pemesanan_faris`
   ADD CONSTRAINT `detail_pemesanan_faris_ibfk_1` FOREIGN KEY (`id_pemesanan_faris`) REFERENCES `pemesanan_faris` (`id_pemesanan_faris`),
   ADD CONSTRAINT `detail_pemesanan_faris_ibfk_2` FOREIGN KEY (`id_kursi_faris`) REFERENCES `kursi_faris` (`id_kursi_faris`);
 
---
--- Ketidakleluasaan untuk tabel `jadwal_faris`
---
 ALTER TABLE `jadwal_faris`
   ADD CONSTRAINT `jadwal_faris_ibfk_1` FOREIGN KEY (`id_film_faris`) REFERENCES `film_faris` (`id_film_faris`),
   ADD CONSTRAINT `jadwal_faris_ibfk_2` FOREIGN KEY (`id_teater_faris`) REFERENCES `teater_faris` (`id_teater_faris`);
 
---
--- Ketidakleluasaan untuk tabel `kursi_faris`
---
 ALTER TABLE `kursi_faris`
   ADD CONSTRAINT `kursi_faris_ibfk_1` FOREIGN KEY (`id_teater_faris`) REFERENCES `teater_faris` (`id_teater_faris`);
 
---
--- Ketidakleluasaan untuk tabel `pemesanan_faris`
---
 ALTER TABLE `pemesanan_faris`
   ADD CONSTRAINT `pemesanan_faris_ibfk_1` FOREIGN KEY (`id_user_faris`) REFERENCES `user_faris` (`id_user_faris`),
   ADD CONSTRAINT `pemesanan_faris_ibfk_2` FOREIGN KEY (`id_jadwal_faris`) REFERENCES `jadwal_faris` (`id_jadwal_faris`);

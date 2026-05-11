@@ -51,30 +51,25 @@
         background: transparent !important;
     }
 
-    /* SEMUA YANG ADA DI BAWAH INI HANYA MUNCUL SAAT CETAK */
+
     @media print {
-        .no-print {
+        /* Sembunyikan elemen yang tidak perlu dicetak */
+        nav, header, footer, .navbar, .sidebar, .btn, .no-print {
             display: none !important;
         }
 
-        .print-only {
-            display: block !important;
+        /* Pastikan area konten laporan mengambil lebar penuh (100%) */
+        body, .content-wrapper, .main-panel {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: white !important;
         }
 
-        body {
-            padding: 0;
-            margin: 0;
-        }
-
-        .print-container {
-            padding: 20px;
-            margin: 0;
-        }
-
-        /* Style tabel saat cetak */
-        .laporan-table {
-            width: 100%;
-            border-collapse: collapse;
+        /* Hilangkan bayangan/shadow pada tabel agar hasil print bersih */
+        .card {
+            border: none !important;
+            box-shadow: none !important;
         }
 
         .laporan-table th,
@@ -160,7 +155,7 @@
     <div class="kop-surat">
         <div style="text-align: center;">
             <div style="font-size: 28px; font-weight: bold; color: #cc0000;">🎬 CGV CINEMAS</div>
-            <div style="font-size: 12px; color: #888;">Jl. Raya Bioskop No. 123, Jakarta</div>
+            <div style="font-size: 12px; color: #888;">Paris Van Java Mall Lt. 3, Jl. Sukajadi</div>
             <div style="font-size: 12px; color: #888;">Telp: (021) 1234567 | Email: info@cgv.com</div>
         </div>
         <h2 style="text-align: center; margin-top: 20px;">LAPORAN KEUANGAN</h2>
@@ -201,7 +196,6 @@
         </tbody>
     </table>
 
-    <!-- BAGIAN INI HANYA MUNCUL SAAT CETAK (PRINT ONLY) -->
     <div class="print-only">
         <div class="grand-total">
             <span style="font-size: 16px;">Grand Total :</span>

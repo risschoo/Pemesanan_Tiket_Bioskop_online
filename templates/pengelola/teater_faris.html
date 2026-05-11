@@ -2,24 +2,11 @@
 {% block title %}Kelola Teater{% endblock %}
 
 {% block content %}
-<div class="section-title">
+<div class="section-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
     <h2>🏛️ Kelola Teater</h2>
-</div>
-
-<div class="auth-box" style="max-width:500px; margin-bottom:30px;">
-    <h3 style="color:#cc0000; margin-bottom:18px;">➕ Tambah Teater Baru</h3>
-    <form method="POST">
-        <div class="form-group">
-            <label>Nama Teater</label>
-            <input type="text" name="nama_teater_faris" placeholder="Contoh: Studio 3" required>
-        </div>
-        <div class="form-group">
-            <label>Kapasitas Kursi</label>
-            <input type="number" name="kapasitas_faris" placeholder="Contoh: 48" min="6" max="96" required>
-            <small style="color:#999; font-size:12px;">* Kursi dibuat otomatis (baris A-F)</small>
-        </div>
-        <button type="submit" class="btn-submit">Simpan Teater</button>
-    </form>
+    <a href="{{ url_for('pengelola_tambah_teater_faris') }}" class="btn-submit" style="text-decoration:none; padding:10px 20px;">
+        ➕ Tambah Teater
+    </a>
 </div>
 
 <table class="data-table">
