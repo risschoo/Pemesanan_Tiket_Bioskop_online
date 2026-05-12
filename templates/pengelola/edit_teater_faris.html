@@ -1,0 +1,60 @@
+{% extends 'base_faris.html' %}
+{% block title %}Edit Teater{% endblock %}
+
+{% block content %}
+<div class="section-title" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+    <h2>✏️ Edit Teater</h2>
+    <a href="{{ url_for('pengelola_teater_faris') }}" class="btn-kecil" style="background:#6c757d; text-decoration:none; padding:8px 18px;">
+        ← Kembali
+    </a>
+</div>
+
+<div class="auth-box" style="max-width:500px; margin-bottom:30px;">
+    <form method="POST">
+        <div class="form-group">
+            <label>Nama Teater</label>
+            <input type="text" name="nama_teater_faris" value="{{ teater['nama_teater_faris'] }}" required>
+        </div>
+        <div class="form-group">
+            <label>Kapasitas Kursi</label>
+            <input type="number" name="kapasitas_faris" value="{{ teater['kapasitas_faris'] }}" min="1" required
+                   id="kapasitas_input" onchange="cekPerubahan()">
+            <small id="info_kapasitas" style="color:#888; margin-top:5px; display:block;">
+                Kapasitas saat ini: <strong>{{ teater['kapasitas_faris'] }}</strong> kursi
+            </small>
+            <div id="warning_kapasitas" style="display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:10px 14px; margin-top:8px; color:#856404; font-size:0.9em;">
+                ⚠️ <span id="warning_text"></span>
+            </div>
+        </div>
+        <div style="display:flex; gap:12px; margin-top:10px;">
+            <button type="submit" class="btn-submit">💾 Simpan Perubahan</button>
+            <a href="{{ url_for('pengelola_teater_faris') }}" class="btn-submit" style="background:#888; text-decoration:none; text-align:center;">
+                ✖ Batal
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+const kapasitasAwal = {{ teater['kapasitas_faris'] }};
+function cekPerubahan() {
+    const kapasitasBaru = parseInt(document.getElementById('kapasitas_input').value) || 0;
+    const warningDiv = document.getElementById('warning_kapasitas');
+    const warningText = document.getElementById('warning_text');
+    if (kapasitasBaru < kapasitasAwal) {
+        const selisih = kapasitasAwal - kapasitasBaru;
+        warningDiv.style.display = 'block';
+        warningText.textContent = 'Kapasitas dikurangi ' + selisih + ' kursi. Kursi yang belum pernah dipesan akan dihapus secara otomatis.';
+    } else if (kapasitasBaru > kapasitasAwal) {
+        const selisih = kapasitasBaru - kapasitasAwal;
+        warningDiv.style.display = 'block';
+        warningDiv.style.background = '#f0fff4';
+        warningDiv.style.borderColor = '#9ae6b4';
+        warningDiv.style.color = '#276749';
+        warningText.textContent = 'Kapasitas ditambah ' + selisih + ' kursi baru akan dibuat otomatis.';
+    } else {
+        warningDiv.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

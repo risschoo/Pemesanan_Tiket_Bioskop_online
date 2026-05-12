@@ -48,13 +48,14 @@ CREATE TABLE `jadwal_faris` (
   `tanggal_faris` date NOT NULL,
   `jam_tayang_faris` time NOT NULL,
   `harga_weekday_faris` decimal(10,0) DEFAULT 35000,
-  `harga_weekend_faris` decimal(10,0) DEFAULT 50000
+  `harga_weekend_faris` decimal(10,0) DEFAULT 50000,
+  `status_faris` enum('tersedia','penuh') DEFAULT 'tersedia'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
-INSERT INTO `jadwal_faris` (`id_jadwal_faris`, `id_film_faris`, `id_teater_faris`, `tanggal_faris`, `jam_tayang_faris`, `harga_weekday_faris`, `harga_weekend_faris`) VALUES
-(1, 1, 1, '2026-04-16', '21:28:00', 35000, 50000),
-(2, 2, 1, '2026-04-16', '21:52:00', 35000, 50000);
+INSERT INTO `jadwal_faris` (`id_jadwal_faris`, `id_film_faris`, `id_teater_faris`, `tanggal_faris`, `jam_tayang_faris`, `harga_weekday_faris`, `harga_weekend_faris`, `status_faris`) VALUES
+(1, 1, 1, '2026-04-16', '21:28:00', 35000, 50000, 'tersedia'),
+(2, 2, 1, '2026-04-16', '21:52:00', 35000, 50000, 'tersedia');
 
 
 CREATE TABLE `kursi_faris` (

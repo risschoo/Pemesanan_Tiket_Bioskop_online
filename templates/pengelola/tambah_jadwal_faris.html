@@ -1,99 +1,278 @@
 {% extends 'base_faris.html' %}
-{% block title %}Tambah Jadwal{% endblock %}
+{% block title %}Tambah Jadwal – Rentang Tanggal{% endblock %}
 
 {% block content %}
-<div class="auth-box" style="max-width:620px;">
-    <h2><i class="fa-solid fa-calendar-plus"></i> Tambah Jadwal Baru</h2>
-    
-    <form method="POST">
-        <div class="form-group">
-            <label>Pilih Film</label>
-            <select name="id_film_faris" id="film_select" required>
-                <option value="">-- Pilih Film --</option>
-                {% for f_faris in films_faris %}
-                <option value="{{ f_faris['id_film_faris'] }}" data-durasi="{{ f_faris['durasi_faris'] }}">
-                    {{ f_faris['judul_faris'] }} ({{ f_faris['durasi_faris'] }} menit)
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label>Pilih Teater</label>
-            <select name="id_teater_faris" required>
-                <option value="">-- Pilih Teater --</option>
-                {% for t_faris in teaters_faris %}
-                <option value="{{ t_faris['id_teater_faris'] }}">
-                    {{ t_faris['nama_teater_faris'] }} ({{ t_faris['kapasitas_faris'] }} kursi)
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label>Tanggal Tayang (maksimal 4 hari ke depan)</label>
-            <input type="date" name="tanggal_faris" id="tanggal_input" required>
-        </div>
-        
-        <div class="form-group">
-            <label>Jam Tayang</label>
-            <input type="time" name="jam_tayang_faris" id="jam_input" required>
-            <small id="info_selesai" style="color:#888; display:block; margin-top:5px;"></small>
-        </div>
-        
-        <div class="form-group">
-            <label>Harga Weekday (Senin - Jumat)</label>
-            <input type="number" name="harga_weekday_faris" value="35000" min="1000" required>
-        </div>
-        
-        <div class="form-group">
-            <label>Harga Weekend (Sabtu - Minggu)</label>
-            <input type="number" name="harga_weekend_faris" value="50000" min="1000" required>
-        </div>
-        
-        <button type="submit" class="btn-submit">Simpan Jadwal</button>
-        <a href="{{ url_for('pengelola_jadwal_faris') }}" class="btn-kecil" style="display:block; text-align:center; margin-top:12px; background:#6c757d;">
-            ← Kembali
-        </a>
-    </form>
+<div class="section-title" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <h2>🗓️ Generate Jadwal Otomatis</h2>
+    <a href="{{ url_for('pengelola_dashboard_faris') }}" class="btn-kecil" style="background:#6c757d;text-decoration:none;padding:8px 18px;">← Kembali</a>
+       style="background:#6c757d;text-decoration:none;padding:8px 18px;">← Kembali</a>
 </div>
 
-<script>
-    // Hitung estimasi selesai
-    const filmSelect = document.getElementById('film_select');
-    const jamInput = document.getElementById('jam_input');
-    const infoSelesai = document.getElementById('info_selesai');
+<!-- Info banner -->
+<div style="background:#e8f4fd;border:1px solid #bee3f8;border-radius:10px;padding:14px 18px;margin-bottom:22px;line-height:1.8;">
+    <strong>ℹ️ Cara Kerja Sistem Jadwal:</strong>
+    <ul style="margin:6px 0 0 18px;color:#333;">
+        <li>Pilih <strong>1 studio</strong>, <strong>1 film</strong>, dan <strong>rentang tanggal</strong> (maks. {{ maks_advance }} hari ke depan)</li>
+        <li>Sistem otomatis membuat semua sesi tayang mulai <strong>09:00</strong> s/d selesai sebelum <strong>23:00</strong></li>
+        <li>Jeda bersih layar antar sesi: <strong>10 menit</strong></li>
+        <li>Tanggal yang studio-nya sudah ada jadwal film lain akan <strong>dilewati otomatis</strong></li>
+    </ul>
+</div>
 
-    function hitungEstimasi() {
-        const selectedOption = filmSelect.options[filmSelect.selectedIndex];
-        const durasi = selectedOption ? selectedOption.getAttribute('data-durasi') : null;
-        const jamMulai = jamInput.value;
-        
-        if (durasi && jamMulai) {
-            const [jam, menit] = jamMulai.split(':').map(Number);
-            let totalMenit = jam * 60 + menit + parseInt(durasi) + 10;
-            let jamSelesai = Math.floor(totalMenit / 60);
-            let menitSelesai = totalMenit % 60;
-            if (jamSelesai >= 24) {
-                jamSelesai -= 24;
-                infoSelesai.innerHTML = `<span style="color:#ff6600;">⚠️ Estimasi selesai: ${jamSelesai.toString().padStart(2,'0')}:${menitSelesai.toString().padStart(2,'0')} (keesokan hari)</span>`;
-            } else {
-                infoSelesai.innerHTML = `Estimasi selesai (+10 menit bersih): <strong>${jamSelesai.toString().padStart(2,'0')}:${menitSelesai.toString().padStart(2,'0')}</strong>`;
-            }
-        } else {
-            infoSelesai.innerHTML = '';
-        }
+<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;">
+
+    <!-- FORM KIRI -->
+    <div class="auth-box" style="max-width:520px;flex:1;min-width:300px;">
+        <form method="POST" id="form_jadwal">
+
+            <div class="form-group">
+                <label>🎬 Pilih Film</label>
+                <select name="id_film_faris" id="film_select" required onchange="updatePreview()">
+                    <option value="">-- Pilih Film --</option>
+                    {% for f in films_faris %}
+                    <option value="{{ f['id_film_faris'] }}"
+                            data-durasi="{{ f['durasi_faris'] }}"
+                            data-judul="{{ f['judul_faris'] }}">
+                        {{ f['judul_faris'] }} ({{ f['durasi_faris'] }} menit)
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>🏛️ Pilih Studio / Teater</label>
+                <select name="id_teater_faris" id="teater_select" required onchange="updatePreview()">
+                    <option value="">-- Pilih Studio --</option>
+                    {% for t in teaters_faris %}
+                    <option value="{{ t['id_teater_faris'] }}"
+                            data-nama="{{ t['nama_teater_faris'] }}">
+                        {{ t['nama_teater_faris'] }} ({{ t['kapasitas_faris'] }} kursi)
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Rentang Tanggal -->
+            <div style="display:flex;gap:14px;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:140px;">
+                    <label>📅 Tanggal Mulai</label>
+                    <input type="date" name="tanggal_mulai_faris" id="tgl_mulai"
+                           min="{{ hari_ini }}" max="{{ batas_max }}" value="{{ hari_ini }}"
+                           required onchange="updatePreview()">
+                </div>
+                <div class="form-group" style="flex:1;min-width:140px;">
+                    <label>📅 Tanggal Selesai</label>
+                    <input type="date" name="tanggal_selesai_faris" id="tgl_selesai"
+                           min="{{ hari_ini }}" max="{{ batas_max }}" value="{{ batas_max }}"
+                           required onchange="updatePreview()">
+                </div>
+            </div>
+
+            <!-- Shortcut rentang -->
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+                <span style="font-size:0.82em;color:#666;align-self:center;">Cepat:</span>
+                <button type="button" class="btn-kecil" style="background:#6c757d;font-size:0.8em;"
+                        onclick="setRentang(1)">Hari ini</button>
+                <button type="button" class="btn-kecil" style="background:#6c757d;font-size:0.8em;"
+                        onclick="setRentang(3)">3 Hari</button>
+                <button type="button" class="btn-kecil" style="background:#6c757d;font-size:0.8em;"
+                        onclick="setRentang(7)">1 Minggu</button>
+                <button type="button" class="btn-kecil" style="background:#6c757d;font-size:0.8em;"
+                        onclick="setRentangKamis()">Kamis–Rabu</button>
+                <button type="button" class="btn-kecil" style="background:#6c757d;font-size:0.8em;"
+                        onclick="setRentang(30)">30 Hari</button>
+            </div>
+
+            <!-- Preview -->
+            <div id="preview_box" style="display:none;background:#f0fff4;border:1px solid #9ae6b4;
+                 border-radius:8px;padding:14px 16px;margin-bottom:16px;">
+                <strong>📋 Estimasi Generate:</strong>
+                <div id="preview_content" style="margin-top:8px;color:#276749;font-size:0.88em;line-height:1.7;"></div>
+            </div>
+
+            <div style="display:flex;gap:14px;flex-wrap:wrap;">
+                <div class="form-group" style="flex:1;min-width:140px;">
+                    <label>💵 Harga Weekday</label>
+                    <input type="number" name="harga_weekday_faris" id="harga_weekday"
+                           value="35000" min="1000" required onchange="updatePreview()">
+                </div>
+                <div class="form-group" style="flex:1;min-width:140px;">
+                    <label>💵 Harga Weekend</label>
+                    <input type="number" name="harga_weekend_faris" id="harga_weekend"
+                           value="50000" min="1000" required onchange="updatePreview()">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit" id="btn_generate">
+                ⚡ Generate Jadwal Sekarang
+            </button>
+        </form>
+    </div>
+
+    <!-- KALENDER KETERSEDIAAN KANAN -->
+    <div style="flex:1;min-width:280px;">
+        <h3 style="margin-bottom:12px;">📊 Ketersediaan Studio ({{ maks_advance }} Hari ke Depan)</h3>
+        <div id="availability_table" style="font-size:0.85em;">
+            {% if jadwal_existing %}
+            <table class="data-table" style="font-size:0.92em;">
+                <thead>
+                    <tr><th>Tanggal</th><th>Studio</th><th>Film</th></tr>
+                </thead>
+                <tbody>
+                    {% for j in jadwal_existing %}
+                    <tr>
+                        <td>{{ j['tanggal_faris'].strftime('%d/%m/%Y') }}</td>
+                        <td>{{ j['nama_teater_faris'] }}</td>
+                        <td style="color:#c0392b;">{{ j['judul_faris'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color:#888;font-style:italic;">Belum ada jadwal yang terdaftar dalam 30 hari ke depan.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<!-- END flex -->
+
+<script>
+// ── Data dari server ──────────────────────────────────────────────
+const jadwalExisting = [
+    {% for j in jadwal_existing %}
+    {
+        teater: {{ j['id_teater_faris'] }},
+        tanggal: "{{ j['tanggal_faris'].strftime('%Y-%m-%d') }}",
+        film: {{ j['judul_faris'] | tojson }}
+    },
+    {% endfor %}
+];
+const MAKS = {{ maks_advance }};
+const HARI_INI  = "{{ hari_ini }}";
+const BATAS_MAX = "{{ batas_max }}";
+
+// ── Shortcut rentang ─────────────────────────────────────────────
+function setRentang(hari) {
+    const today = new Date();
+    const tglMulai  = today.toISOString().split('T')[0];
+    const tglSelesai = new Date(today.setDate(today.getDate() + hari - 1))
+                            .toISOString().split('T')[0];
+    const batas = BATAS_MAX;
+    document.getElementById('tgl_mulai').value   = tglMulai;
+    document.getElementById('tgl_selesai').value = tglSelesai > batas ? batas : tglSelesai;
+    updatePreview();
+}
+
+function setRentangKamis() {
+    // Cari Kamis terdekat (termasuk hari ini jika Kamis)
+    const today = new Date();
+    const hari  = today.getDay(); // 0=Min, 4=Kam
+    const selisihKamis = (4 - hari + 7) % 7;
+    const kamis = new Date(today);
+    kamis.setDate(today.getDate() + selisihKamis);
+    const rabu  = new Date(kamis);
+    rabu.setDate(kamis.getDate() + 6);
+    const batas = new Date(BATAS_MAX);
+    const tglKamis = kamis.toISOString().split('T')[0];
+    const tglRabu  = rabu > batas ? BATAS_MAX : rabu.toISOString().split('T')[0];
+    // Jika Kamis sudah lewat batas, mundur ke Kamis berikutnya minggu ini
+    const tglMulaiMin = tglKamis < HARI_INI ? HARI_INI : tglKamis;
+    document.getElementById('tgl_mulai').value   = tglMulaiMin;
+    document.getElementById('tgl_selesai').value = tglRabu;
+    updatePreview();
+}
+
+// ── Hitung slot jam ───────────────────────────────────────────────
+function hitungSlot(durasi) {
+    // Logika sama persis dengan Python: film harus SELESAI sebelum 23:00
+    // Jeda 10 menit hanya untuk jarak antar slot, bukan batas akhir
+    const slots = [];
+    const JEDA  = 10;
+    const BATAS = 23 * 60;  // film harus selesai sebelum/tepat 23:00
+    let m = 9 * 60;         // mulai 09:00
+    const d = parseInt(durasi);
+    while (true) {
+        const selesaiFilm = m + d;           // kapan film benar-benar selesai
+        if (selesaiFilm > BATAS) break;      // lewat 23:00 -> stop
+        slots.push({ mulai: m, selesai: selesaiFilm });
+        m = selesaiFilm + JEDA;              // slot berikutnya setelah jeda
+    }
+    return slots.map(s => {
+        const jM = String(Math.floor(s.mulai/60)).padStart(2,'0');
+        const mM = String(s.mulai%60).padStart(2,'0');
+        const jS = String(Math.floor(s.selesai/60)).padStart(2,'0');
+        const mS = String(s.selesai%60).padStart(2,'0');
+        return { mulaiStr: jM+':'+mM, selesaiStr: jS+':'+mS };
+    });
+}
+
+// ── Update preview ────────────────────────────────────────────────
+function updatePreview() {
+    const filmSel   = document.getElementById('film_select');
+    const teaterSel = document.getElementById('teater_select');
+    const tglMulai  = document.getElementById('tgl_mulai').value;
+    const tglSelesai= document.getElementById('tgl_selesai').value;
+    const previewBox= document.getElementById('preview_box');
+    const previewCnt= document.getElementById('preview_content');
+
+    if (!filmSel.value || !teaterSel.value || !tglMulai || !tglSelesai) {
+        previewBox.style.display = 'none';
+        return;
+    }
+    if (tglMulai > tglSelesai) {
+        previewBox.style.display = 'none';
+        return;
     }
 
-    filmSelect.addEventListener('change', hitungEstimasi);
-    jamInput.addEventListener('change', hitungEstimasi);
-    
-    // Batasi tanggal maksimal 4 hari ke depan
-    const tanggalInput = document.getElementById('tanggal_input');
-    const today = new Date();
-    const maxDate = new Date();
-    maxDate.setDate(today.getDate() + 4);
-    tanggalInput.min = today.toISOString().split('T')[0];
-    tanggalInput.max = maxDate.toISOString().split('T')[0];
+    const idTeater  = parseInt(teaterSel.value);
+    const filmOpt   = filmSel.options[filmSel.selectedIndex];
+    const durasi    = parseInt(filmOpt.getAttribute('data-durasi'));
+    const judul     = filmOpt.getAttribute('data-judul');
+    const slots     = hitungSlot(durasi);
+
+    // Hitung hari dalam rentang
+    const d1 = new Date(tglMulai);
+    const d2 = new Date(tglSelesai);
+    let totalHari  = 0, berhasil = 0, skip = 0;
+    const skipList = [];
+
+    let d = new Date(d1);
+    while (d <= d2) {
+        totalHari++;
+        const tStr = d.toISOString().split('T')[0];
+        const ada  = jadwalExisting.find(j => j.teater === idTeater && j.tanggal === tStr);
+        if (ada) {
+            skip++;
+            skipList.push(`${tStr} (${ada.film})`);
+        } else {
+            berhasil++;
+        }
+        d.setDate(d.getDate() + 1);
+    }
+
+    const totalSesi = berhasil * slots.length;
+    const hargaWD   = parseInt(document.getElementById('harga_weekday').value)||35000;
+    const hargaWE   = parseInt(document.getElementById('harga_weekend').value)||50000;
+
+    // Format slot: "09:00 (s/d 11:03), 11:13 (s/d 13:16), ..."
+    const slotLabel = slots.map(s => `${s.mulaiStr} <span style="color:#888;font-size:.9em;">→ ${s.selesaiStr}</span>`).join('&nbsp;&nbsp;|&nbsp;&nbsp;');
+
+    let html = `<b>Film:</b> ${judul} (${durasi} menit)<br>`;
+    html += `<b>Rentang:</b> ${tglMulai} → ${tglSelesai} (${totalHari} hari)<br>`;
+    html += `<b>Slot per hari (${slots.length} sesi):</b><br><div style="margin:4px 0 4px 12px;line-height:1.9;">${slotLabel}</div>`;
+    html += `<b>Total hari berhasil:</b> ${berhasil} hari × ${slots.length} sesi = <strong>${totalSesi} sesi jadwal</strong><br>`;
+    html += `<b>Harga:</b> Weekday Rp ${hargaWD.toLocaleString('id-ID')} / Weekend Rp ${hargaWE.toLocaleString('id-ID')}<br>`;
+    if (skip > 0) {
+        html += `<br><span style="color:#856404;">⚠️ ${skip} hari dilewati (sudah ada jadwal):</span><br>`;
+        html += skipList.slice(0,5).map(s=>`&nbsp;&nbsp;• ${s}`).join('<br>');
+        if (skipList.length > 5) html += `<br>&nbsp;&nbsp;• ...dan ${skipList.length-5} lainnya`;
+    }
+
+    previewCnt.innerHTML = html;
+    previewBox.style.display = 'block';
+}
+
+// Trigger saat load
+updatePreview();
 </script>
 {% endblock %}

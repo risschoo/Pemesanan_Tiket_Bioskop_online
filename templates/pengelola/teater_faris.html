@@ -15,6 +15,7 @@
             <th>No</th>
             <th>Nama Teater</th>
             <th>Kapasitas</th>
+            <th>Aksi</th>
         </tr>
     </thead>
     <tbody>
@@ -23,10 +24,14 @@
             <td>{{ loop.index }}</td>
             <td>{{ t_faris['nama_teater_faris'] }}</td>
             <td>{{ t_faris['kapasitas_faris'] }} kursi</td>
+            <td>
+                <a href="{{ url_for('pengelola_edit_teater_faris', id_teater_faris=t_faris['id_teater_faris']) }}"
+                   class="btn-kecil btn-info">✏️ Edit</a>
+            </td>
         </tr>
         {% else %}
         <tr>
-            <td colspan="3" style="text-align:center; color:#aaa; padding:30px;">
+            <td colspan="4" style="text-align:center; color:#aaa; padding:30px;">
                 Belum ada data teater.
             </td>
         </tr>

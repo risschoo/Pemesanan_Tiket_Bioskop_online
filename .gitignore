@@ -1,0 +1,14 @@
+# Konfigurasi sensitif — JANGAN pernah di-push ke GitHub/GitLab
+config.env
+.env
+*.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Upload files
+static/uploads/*.jpg
+static/uploads/*.png
+static/uploads/*.jpeg

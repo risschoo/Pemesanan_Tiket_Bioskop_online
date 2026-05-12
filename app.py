@@ -1,16 +1,23 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, abort
 import mysql.connector
 import os
 import uuid
+import hashlib
+import hmac
 from datetime import datetime, timedelta, date
+from functools import wraps
 from werkzeug.utils import secure_filename
 import midtransclient
 import requests
 import base64
 import json
+import config_loader  
+
+def _cfg(key, default=None):
+    return os.environ.get(key, default)
 
 app = Flask(__name__)
-app.secret_key = 'cgvbioskop2024rahasia_faris'
+app.secret_key = _cfg('FLASK_SECRET_KEY', 'cgvbioskop2024_fallback_dev_only')
 
 UPLOAD_FOLDER_FARIS = os.path.join('static', 'uploads')
 ALLOWED_EXTENSIONS_FARIS = {'png', 'jpg', 'jpeg'}
@@ -19,11 +26,12 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER_FARIS
 if not os.path.exists(UPLOAD_FOLDER_FARIS):
     os.makedirs(UPLOAD_FOLDER_FARIS)
 
-# Konfigurasi Midtrans
-MIDTRANS_SERVER_KEY = 'Mid-server-gMZxTVNEDZE4fbHnaz9qYv9T'
-MIDTRANS_CLIENT_KEY = 'Mid-client-PvwImZjz6-_b08sv'
-MIDTRANS_MERCHANT_ID = 'M670785059'
-MIDTRANS_IS_PRODUCTION = False
+MIDTRANS_SERVER_KEY   = _cfg('MIDTRANS_SERVER_KEY',   'Mid-server-gMZxTVNEDZE4fbHnaz9qYv9T')
+MIDTRANS_CLIENT_KEY   = _cfg('MIDTRANS_CLIENT_KEY',   'Mid-client-PvwImZjz6-_b08sv')
+MIDTRANS_MERCHANT_ID  = _cfg('MIDTRANS_MERCHANT_ID',  'M670785059')
+MIDTRANS_IS_PRODUCTION = _cfg('MIDTRANS_IS_PRODUCTION', 'False').lower() == 'true'
+
+PAYMENT_EXPIRE_MINUTES = int(_cfg('PAYMENT_EXPIRE_MINUTES', 15))
 
 snap = midtransclient.Snap(
     is_production=MIDTRANS_IS_PRODUCTION,
@@ -36,6 +44,52 @@ core = midtransclient.CoreApi(
     server_key=MIDTRANS_SERVER_KEY,
     client_key=MIDTRANS_CLIENT_KEY
 )
+
+
+def login_required(f):
+    """Pastikan user sudah login (role apapun)."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id_faris' not in session:
+            flash('Silakan login terlebih dahulu.', 'warning')
+            return redirect(url_for('login_faris'))
+        return f(*args, **kwargs)
+    return decorated
+
+def role_required(*roles):
+    """Pastikan user memiliki role yang diizinkan. Contoh: @role_required('admin', 'pengelola')"""
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            if 'user_id_faris' not in session:
+                flash('Silakan login terlebih dahulu.', 'warning')
+                return redirect(url_for('login_faris'))
+            if session.get('role_faris') not in roles:
+                flash('Anda tidak memiliki akses ke halaman ini.', 'danger')
+                # Kembalikan ke dashboard sesuai role
+                role = session.get('role_faris')
+                if role == 'admin':
+                    return redirect(url_for('admin_dashboard_faris'))
+                elif role == 'pengelola':
+                    return redirect(url_for('pengelola_dashboard_faris'))
+                else:
+                    return redirect(url_for('index_faris'))
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
+
+def pengguna_required(f):
+    """Shortcut untuk role pengguna saja."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if 'user_id_faris' not in session:
+            flash('Silakan login sebagai pengguna dulu!', 'warning')
+            return redirect(url_for('login_faris'))
+        if session.get('role_faris') != 'pengguna':
+            flash('Halaman ini hanya untuk pengguna biasa.', 'danger')
+            return redirect(url_for('index_faris'))
+        return f(*args, **kwargs)
+    return decorated
 
 # Fungsi Bantuan
 def get_db_faris():
@@ -114,6 +168,43 @@ def update_status_jadwal(id_jadwal_faris):
                       (status_baru, id_jadwal_faris))
     db_faris.commit()
     db_faris.close()
+
+
+def expire_pending_payments():
+    """
+    Cari semua transaksi dengan status 'pending' yang sudah melewati
+    batas waktu PAYMENT_EXPIRE_MINUTES. Ubah statusnya menjadi 'expired'
+    agar kursi bisa dipesan kembali oleh pengguna lain.
+    Fungsi ini dipanggil otomatis setiap kali halaman pilih-kursi dibuka.
+    """
+    try:
+        db = get_db_faris()
+        cur = db.cursor()
+        batas_waktu = datetime.now() - timedelta(minutes=PAYMENT_EXPIRE_MINUTES)
+        # Ambil daftar id_jadwal yang terdampak agar status-nya bisa diupdate
+        cur.execute("""
+            SELECT id_pemesanan_faris, id_jadwal_faris
+            FROM pemesanan_faris
+            WHERE status_bayar_faris IN ('pending', 'belum')
+              AND created_at_faris < %s
+        """, (batas_waktu,))
+        expired_list = cur.fetchall()
+
+        if expired_list:
+            cur.execute("""
+                UPDATE pemesanan_faris
+                SET status_bayar_faris = 'expired'
+                WHERE status_bayar_faris IN ('pending', 'belum')
+                  AND created_at_faris < %s
+            """, (batas_waktu,))
+            db.commit()
+            # Update status jadwal yang terdampak
+            jadwal_terdampak = set(row[1] for row in expired_list)
+            for id_jadwal in jadwal_terdampak:
+                update_status_jadwal(id_jadwal)
+        db.close()
+    except Exception as e:
+        print(f"[expire_pending_payments] Error: {e}")
 
 def create_midtrans_transaction(id_pemesanan_faris, total_harga, nama_user, email_user, no_hp_user, kursi_list):
     order_id = f"CGV-{id_pemesanan_faris}-{datetime.now().strftime('%Y%m%d%H%M%S')}"
@@ -254,10 +345,10 @@ def detail_film_faris(id_film_faris):
                            jadwals_faris=jadwals_faris)
 
 @app.route('/pilih_kursi_faris/<int:id_jadwal_faris>')
+@pengguna_required
 def pilih_kursi_faris(id_jadwal_faris):
-    if 'user_id_faris' not in session or session.get('role_faris') != 'pengguna':
-        flash('Silakan login sebagai pengguna dulu!', 'warning')
-        return redirect(url_for('login_faris'))
+    # [POIN 2] Bersihkan transaksi expired sebelum tampilkan kursi
+    expire_pending_payments()
 
     db_faris = get_db_faris()
     cur_faris = db_faris.cursor(dictionary=True)
@@ -285,14 +376,20 @@ def pilih_kursi_faris(id_jadwal_faris):
     """, (jadwal_faris['id_teater_faris'],))
     semua_kursi_faris = cur_faris.fetchall()
 
+    # [POIN 1 & 2] Kursi terkunci = lunas ATAU pending yang belum expired
+    batas_pending = datetime.now() - timedelta(minutes=PAYMENT_EXPIRE_MINUTES)
     cur_faris.execute("""
-        SELECT dp.id_kursi_faris FROM detail_pemesanan_faris dp
-        JOIN pemesanan_faris p ON dp.id_pemesanan_faris=p.id_pemesanan_faris
-        WHERE p.id_jadwal_faris=%s AND p.status_bayar_faris='lunas'
-    """, (id_jadwal_faris,))
+        SELECT DISTINCT dp.id_kursi_faris
+        FROM detail_pemesanan_faris dp
+        JOIN pemesanan_faris p ON dp.id_pemesanan_faris = p.id_pemesanan_faris
+        WHERE p.id_jadwal_faris = %s
+          AND (
+              p.status_bayar_faris = 'lunas'
+              OR (p.status_bayar_faris IN ('pending','belum') AND p.created_at_faris >= %s)
+          )
+    """, (id_jadwal_faris, batas_pending))
     kursi_dipesan_faris = [r['id_kursi_faris'] for r in cur_faris.fetchall()]
 
-    #harga berdasarkan hari
     tanggal_faris = jadwal_faris['tanggal_faris']
     hari_faris = tanggal_faris.weekday()
     if hari_faris in [5, 6]:
@@ -319,13 +416,12 @@ def pilih_kursi_faris(id_jadwal_faris):
                            kursi_dipesan_faris=kursi_dipesan_faris,
                            harga_faris=harga_faris,
                            tipe_hari_faris=tipe_hari_faris,
-                           total_kolom_faris=total_kolom_faris)
+                           total_kolom_faris=total_kolom_faris,
+                           payment_expire_minutes=PAYMENT_EXPIRE_MINUTES)
 
 @app.route('/pesan_faris', methods=['POST'])
+@pengguna_required
 def pesan_faris():
-    if 'user_id_faris' not in session:
-        return redirect(url_for('login_faris'))
-
     id_jadwal_faris = request.form['id_jadwal_faris']
     kursi_dipilih_faris = request.form.getlist('kursi_faris')
 
@@ -335,61 +431,109 @@ def pesan_faris():
 
     db_faris = get_db_faris()
     cur_faris = db_faris.cursor(dictionary=True)
-    cur_faris.execute("SELECT * FROM jadwal_faris WHERE id_jadwal_faris=%s", (id_jadwal_faris,))
-    jadwal_faris = cur_faris.fetchone()
-    cur_faris.execute("SELECT * FROM user_faris WHERE id_user_faris=%s", (session['user_id_faris'],))
-    user_faris = cur_faris.fetchone()
-    
-    tanggal_faris = jadwal_faris['tanggal_faris']
-    hari_faris = tanggal_faris.weekday()
-    harga_faris = jadwal_faris['harga_weekend_faris'] if hari_faris in [5, 6] else jadwal_faris['harga_weekday_faris']
-    total_faris = harga_faris * len(kursi_dipilih_faris)
-    
-    cur2_faris = db_faris.cursor()
-    cur2_faris.execute(
-        "INSERT INTO pemesanan_faris (id_user_faris, id_jadwal_faris, total_harga_faris, status_bayar_faris) VALUES (%s,%s,%s,'belum')",
-        (session['user_id_faris'], id_jadwal_faris, total_faris)
-    )
-    db_faris.commit()
-    id_pemesanan_faris = cur2_faris.lastrowid
-    
-    kursi_data = []
-    for id_kursi_faris in kursi_dipilih_faris:
-        cur2_faris.execute("INSERT INTO detail_pemesanan_faris (id_pemesanan_faris, id_kursi_faris) VALUES (%s,%s)",
-                     (id_pemesanan_faris, id_kursi_faris))
-        cur_faris.execute("SELECT kode_kursi_faris FROM kursi_faris WHERE id_kursi_faris=%s", (id_kursi_faris,))
-        kursi = cur_faris.fetchone()
-        if kursi:
-            kursi_data.append(kursi)
-    db_faris.commit()
-    db_faris.close()
-    
+
+    try:
+        # ── [POIN 1] DOUBLE-BOOKING GUARD — Transaksi SERIALIZABLE ──────
+        db_faris.start_transaction(isolation_level='SERIALIZABLE')
+
+        cur_faris.execute("""
+            SELECT j.*, f.judul_faris
+            FROM jadwal_faris j
+            JOIN film_faris f ON j.id_film_faris = f.id_film_faris
+            WHERE j.id_jadwal_faris = %s
+            FOR UPDATE
+        """, (id_jadwal_faris,))
+        jadwal_faris = cur_faris.fetchone()
+
+        if not jadwal_faris:
+            db_faris.rollback()
+            flash('Jadwal tidak ditemukan!', 'danger')
+            return redirect(url_for('index_faris'))
+
+        # Cek ulang kursi di-DB saat ini (real-time)
+        batas_pending = datetime.now() - timedelta(minutes=PAYMENT_EXPIRE_MINUTES)
+        placeholders = ','.join(['%s'] * len(kursi_dipilih_faris))
+        cur_faris.execute(f"""
+            SELECT dp.id_kursi_faris, k.kode_kursi_faris
+            FROM detail_pemesanan_faris dp
+            JOIN pemesanan_faris p ON dp.id_pemesanan_faris = p.id_pemesanan_faris
+            JOIN kursi_faris k ON dp.id_kursi_faris = k.id_kursi_faris
+            WHERE p.id_jadwal_faris = %s
+              AND dp.id_kursi_faris IN ({placeholders})
+              AND (
+                  p.status_bayar_faris = 'lunas'
+                  OR (p.status_bayar_faris IN ('pending','belum') AND p.created_at_faris >= %s)
+              )
+        """, [id_jadwal_faris] + kursi_dipilih_faris + [batas_pending])
+        sudah_diambil = cur_faris.fetchall()
+
+        if sudah_diambil:
+            db_faris.rollback()
+            kode_bentrok = ', '.join(k['kode_kursi_faris'] for k in sudah_diambil)
+            flash(f'⚠️ Maaf! Kursi {kode_bentrok} baru saja dipesan orang lain. Silakan pilih kursi lain.', 'danger')
+            return redirect(url_for('pilih_kursi_faris', id_jadwal_faris=id_jadwal_faris))
+
+        # Hitung harga
+        cur_faris.execute("SELECT * FROM user_faris WHERE id_user_faris=%s", (session['user_id_faris'],))
+        user_faris = cur_faris.fetchone()
+        tanggal_faris = jadwal_faris['tanggal_faris']
+        harga_faris = jadwal_faris['harga_weekend_faris'] if tanggal_faris.weekday() in [5, 6] else jadwal_faris['harga_weekday_faris']
+        total_faris = harga_faris * len(kursi_dipilih_faris)
+
+        cur2_faris = db_faris.cursor()
+        cur2_faris.execute(
+            "INSERT INTO pemesanan_faris (id_user_faris, id_jadwal_faris, total_harga_faris, status_bayar_faris) VALUES (%s,%s,%s,'belum')",
+            (session['user_id_faris'], id_jadwal_faris, total_faris)
+        )
+        id_pemesanan_faris = cur2_faris.lastrowid
+
+        kursi_data = []
+        for id_kursi_faris in kursi_dipilih_faris:
+            cur2_faris.execute("INSERT INTO detail_pemesanan_faris (id_pemesanan_faris, id_kursi_faris) VALUES (%s,%s)",
+                         (id_pemesanan_faris, id_kursi_faris))
+            cur_faris.execute("SELECT kode_kursi_faris FROM kursi_faris WHERE id_kursi_faris=%s", (id_kursi_faris,))
+            kursi = cur_faris.fetchone()
+            if kursi:
+                kursi_data.append(kursi)
+
+        db_faris.commit()
+
+    except mysql.connector.Error as e:
+        db_faris.rollback()
+        flash('Terjadi kesalahan saat memproses pesanan. Silakan coba lagi.', 'danger')
+        print(f"[pesan_faris] DB Error: {e}")
+        return redirect(url_for('pilih_kursi_faris', id_jadwal_faris=id_jadwal_faris))
+    finally:
+        db_faris.close()
+
+    # [POIN 4] Buat transaksi Midtrans
     midtrans_response = create_midtrans_transaction(
         id_pemesanan_faris, total_faris, user_faris['nama_faris'],
         user_faris['email_faris'], user_faris['no_hp_faris'], kursi_data
     )
-    
+
     if midtrans_response and 'token' in midtrans_response:
         order_id_value = midtrans_response.get('order_id', f"CGV-{id_pemesanan_faris}")
-        db_faris = get_db_faris()
-        cur_faris = db_faris.cursor()
-        cur_faris.execute("UPDATE pemesanan_faris SET snap_token=%s, midtrans_order_id=%s, status_bayar_faris='pending' WHERE id_pemesanan_faris=%s",
-                         (midtrans_response['token'], order_id_value, id_pemesanan_faris))
-        db_faris.commit()
-        db_faris.close()
-        return render_template('pay_faris.html', 
+        db2 = get_db_faris()
+        cur3 = db2.cursor()
+        cur3.execute("UPDATE pemesanan_faris SET snap_token=%s, midtrans_order_id=%s, status_bayar_faris='pending' WHERE id_pemesanan_faris=%s",
+                     (midtrans_response['token'], order_id_value, id_pemesanan_faris))
+        db2.commit()
+        db2.close()
+        return render_template('pay_faris.html',
                                snap_token=midtrans_response['token'],
                                midtrans_client_key=MIDTRANS_CLIENT_KEY,
                                id_pemesanan_faris=id_pemesanan_faris,
-                               total_harga=total_faris)
+                               total_harga=total_faris,
+                               payment_expire_minutes=PAYMENT_EXPIRE_MINUTES)
     else:
+        db2 = get_db_faris()
+        cur3 = db2.cursor()
+        cur3.execute("DELETE FROM detail_pemesanan_faris WHERE id_pemesanan_faris=%s", (id_pemesanan_faris,))
+        cur3.execute("DELETE FROM pemesanan_faris WHERE id_pemesanan_faris=%s", (id_pemesanan_faris,))
+        db2.commit()
+        db2.close()
         flash('Gagal memproses pembayaran. Silakan coba lagi.', 'danger')
-        db_faris = get_db_faris()
-        cur_faris = db_faris.cursor()
-        cur_faris.execute("DELETE FROM detail_pemesanan_faris WHERE id_pemesanan_faris=%s", (id_pemesanan_faris,))
-        cur_faris.execute("DELETE FROM pemesanan_faris WHERE id_pemesanan_faris=%s", (id_pemesanan_faris,))
-        db_faris.commit()
-        db_faris.close()
         return redirect(url_for('pilih_kursi_faris', id_jadwal_faris=id_jadwal_faris))
 
 @app.route('/pay_faris/<int:id_pemesanan_faris>')
@@ -1001,88 +1145,185 @@ def pengelola_force_lunas_faris(id_pemesanan_faris):
 # 1. MENAMPILKAN DAFTAR JADWAL
 @app.route('/pengelola_faris/jadwal_faris')
 def pengelola_jadwal_faris():
-    if session.get('role_faris') != 'pengelola':
-        return redirect(url_for('index_faris'))
-    
-    db_faris = get_db_faris()
-    cur_faris = db_faris.cursor(dictionary=True)
-    
-    cur_faris.execute("""
-        SELECT j.*, f.judul_faris, f.durasi_faris, t.nama_teater_faris 
+    # Halaman daftar jadwal dihapus sesuai revisi penguji.
+    # Route ini tetap ada agar link lama tidak error, langsung ke form tambah jadwal.
+    return redirect(url_for('pengelola_tambah_jadwal_faris'))
+
+
+# 2. GENERATE JADWAL OTOMATIS - 1 studio, 1 film per hari
+JAM_MULAI_PERTAMA = "09:00"   # Showtime pertama setiap hari
+BATAS_SELESAI     = "23:00"   # Showtime terakhir harus selesai sebelum jam ini
+JEDA_MENIT        = 10        # Jeda bersih layar antar sesi
+HARGA_WEEKDAY_DEFAULT = 35000
+HARGA_WEEKEND_DEFAULT = 50000
+MAKS_ADVANCE_HARI = 30        # Advance booking maksimal 30 hari ke depan
+
+def hitung_slot_jam(durasi_film):
+    """Kembalikan list string jam '09:00', '11:50', … sesuai durasi film."""
+    slot = []
+    menit = 9 * 60  # 09:00
+    batas = 23 * 60  # 23:00
+    while True:
+        selesai = menit + int(durasi_film) + JEDA_MENIT
+        if selesai > batas:
+            break
+        jam  = str(menit // 60).zfill(2)
+        mnt  = str(menit %  60).zfill(2)
+        slot.append(f"{jam}:{mnt}")
+        menit = selesai
+    return slot
+
+def generate_jadwal_rentang(id_teater_faris, id_film_faris,
+                             tgl_mulai, tgl_selesai,
+                             harga_weekday_faris, harga_weekend_faris):
+    """
+    Generate jadwal otomatis untuk rentang tgl_mulai .. tgl_selesai.
+    Aturan: 1 studio = 1 film per hari.
+    Kembalikan (total_berhasil, list_skip, list_error).
+    """
+    db = get_db_faris()
+    cur = db.cursor(dictionary=True)
+
+    # Ambil durasi film sekali
+    cur.execute("SELECT judul_faris, durasi_faris FROM film_faris WHERE id_film_faris=%s", (id_film_faris,))
+    film = cur.fetchone()
+    if not film:
+        db.close()
+        return 0, [], ["Film tidak ditemukan."]
+    durasi_film = film['durasi_faris']
+    judul_film  = film['judul_faris']
+
+    slot_jam = hitung_slot_jam(durasi_film)
+    if not slot_jam:
+        db.close()
+        return 0, [], [f"Film '{judul_film}' ({durasi_film} menit) terlalu panjang untuk dijadwalkan dalam satu hari."]
+
+    # Ambil semua tanggal dalam rentang yang studio ini sudah ada jadwal (agar bisa di-skip)
+    cur.execute("""
+        SELECT tanggal_faris, f.judul_faris as judul_existing
         FROM jadwal_faris j
         JOIN film_faris f ON j.id_film_faris = f.id_film_faris
-        JOIN teater_faris t ON j.id_teater_faris = t.id_teater_faris
-        ORDER BY j.tanggal_faris DESC, j.jam_tayang_faris
-    """)
-    jadwals_faris = cur_faris.fetchall()
-    
-    # Hitung estimasi selesai untuk setiap jadwal
-    for j in jadwals_faris:
-        jam_mulai = j['jam_tayang_faris']
-        if isinstance(jam_mulai, timedelta):
-            jam_mulai = (datetime.min + jam_mulai).time()
-        durasi = j['durasi_faris']
-        jam_selesai = (datetime.combine(datetime.today(), jam_mulai) + timedelta(minutes=int(durasi) + 10)).time()
-        j['estimasi_selesai'] = jam_selesai.strftime('%H:%M')
-    
-    db_faris.close()
-    return render_template('pengelola/jadwal_faris.html', jadwals_faris=jadwals_faris)
+        WHERE j.id_teater_faris = %s
+          AND j.tanggal_faris BETWEEN %s AND %s
+        GROUP BY j.tanggal_faris
+    """, (id_teater_faris, tgl_mulai, tgl_selesai))
+    sudah_ada = {row['tanggal_faris']: row['judul_existing'] for row in cur.fetchall()}
+
+    cur2 = db.cursor()
+    total_berhasil = 0
+    list_skip      = []
+    list_error     = []
+
+    tgl = tgl_mulai
+    while tgl <= tgl_selesai:
+        if tgl in sudah_ada:
+            list_skip.append(f"{tgl.strftime('%d/%m/%Y')} → sudah ada '{sudah_ada[tgl]}'")
+        else:
+            try:
+                for jam in slot_jam:
+                    cur2.execute(
+                        """INSERT INTO jadwal_faris
+                           (id_film_faris, id_teater_faris, tanggal_faris,
+                            jam_tayang_faris, harga_weekday_faris, harga_weekend_faris, status_faris)
+                           VALUES (%s,%s,%s,%s,%s,%s,'tersedia')""",
+                        (id_film_faris, id_teater_faris, tgl,
+                         jam, harga_weekday_faris, harga_weekend_faris)
+                    )
+                db.commit()
+                total_berhasil += 1
+            except Exception as e:
+                db.rollback()
+                list_error.append(f"{tgl.strftime('%d/%m/%Y')} → error: {e}")
+        tgl += timedelta(days=1)
+
+    db.close()
+    return total_berhasil, list_skip, list_error
 
 
-# 2. TAMBAH JADWAL - FORM
 @app.route('/pengelola_faris/jadwal_faris/tambah', methods=['GET', 'POST'])
 def pengelola_tambah_jadwal_faris():
     if session.get('role_faris') != 'pengelola':
         return redirect(url_for('index_faris'))
-    
+
     db_faris = get_db_faris()
     cur_faris = db_faris.cursor(dictionary=True)
 
     if request.method == 'POST':
-        id_film_faris = request.form['id_film_faris']
-        id_teater_faris = request.form['id_teater_faris']
-        tanggal_faris = request.form['tanggal_faris']
-        jam_faris = request.form['jam_tayang_faris']
-        harga_weekday_faris = request.form['harga_weekday_faris']
-        harga_weekend_faris = request.form['harga_weekend_faris']
+        id_film_faris      = request.form['id_film_faris']
+        id_teater_faris    = request.form['id_teater_faris']
+        tgl_mulai_str      = request.form['tanggal_mulai_faris']
+        tgl_selesai_str    = request.form['tanggal_selesai_faris']
+        harga_weekday_faris = int(request.form.get('harga_weekday_faris', HARGA_WEEKDAY_DEFAULT))
+        harga_weekend_faris = int(request.form.get('harga_weekend_faris', HARGA_WEEKEND_DEFAULT))
 
-        tgl_faris = datetime.strptime(tanggal_faris, '%Y-%m-%d').date()
-        batas_faris = datetime.now().date() + timedelta(days=4)
-        
-        if tgl_faris > batas_faris:
-            flash('Jadwal maksimal 4 hari ke depan!', 'danger')
-        elif tgl_faris < datetime.now().date():
-            flash('Tanggal tidak boleh di masa lalu!', 'danger')
-        else:
-            cur_faris.execute("SELECT durasi_faris FROM film_faris WHERE id_film_faris=%s", (id_film_faris,))
-            film_data = cur_faris.fetchone()
-            durasi_film = film_data['durasi_faris'] if film_data else 120
-            
-            bentrok, pesan_bentrok = cek_bentrok_jadwal(id_teater_faris, tanggal_faris, jam_faris, durasi_film)
-            
-            if bentrok:
-                flash(f'Jadwal bentrok! {pesan_bentrok}', 'danger')
+        try:
+            tgl_mulai  = datetime.strptime(tgl_mulai_str,  '%Y-%m-%d').date()
+            tgl_selesai = datetime.strptime(tgl_selesai_str, '%Y-%m-%d').date()
+        except ValueError:
+            flash('Format tanggal tidak valid!', 'danger')
+            tgl_mulai = tgl_selesai = None
+
+        if tgl_mulai and tgl_selesai:
+            hari_ini  = datetime.now().date()
+            batas_max = hari_ini + timedelta(days=MAKS_ADVANCE_HARI)
+
+            if tgl_mulai < hari_ini:
+                flash('Tanggal mulai tidak boleh di masa lalu!', 'danger')
+            elif tgl_selesai < tgl_mulai:
+                flash('Tanggal selesai tidak boleh sebelum tanggal mulai!', 'danger')
+            elif tgl_selesai > batas_max:
+                flash(f'Jadwal maksimal {MAKS_ADVANCE_HARI} hari ke depan (sampai {batas_max.strftime("%d/%m/%Y")})!', 'danger')
             else:
-                cur2_faris = db_faris.cursor()
-                cur2_faris.execute(
-                    "INSERT INTO jadwal_faris (id_film_faris, id_teater_faris, tanggal_faris, jam_tayang_faris, harga_weekday_faris, harga_weekend_faris, status_faris) VALUES (%s,%s,%s,%s,%s,%s,'tersedia')",
-                    (id_film_faris, id_teater_faris, tanggal_faris, jam_faris, harga_weekday_faris, harga_weekend_faris)
-                )
-                db_faris.commit()
-                flash('Jadwal berhasil ditambahkan!', 'success')
                 db_faris.close()
-                return redirect(url_for('pengelola_jadwal_faris'))
-    
-    # GET request - tampilkan form
-    cur_faris.execute("SELECT * FROM film_faris WHERE status_faris='tayang'")
+                total_hari = (tgl_selesai - tgl_mulai).days + 1
+                berhasil, skips, errors = generate_jadwal_rentang(
+                    id_teater_faris, id_film_faris,
+                    tgl_mulai, tgl_selesai,
+                    harga_weekday_faris, harga_weekend_faris
+                )
+                if berhasil > 0:
+                    flash(f'✅ Berhasil membuat jadwal untuk {berhasil} hari '
+                          f'(dari {total_hari} hari yang diminta).', 'success')
+                if skips:
+                    flash('⚠️ Dilewati karena sudah ada jadwal: ' + ' | '.join(skips), 'warning')
+                if errors:
+                    flash('❌ Gagal: ' + ' | '.join(errors), 'danger')
+                if berhasil == 0 and not errors:
+                    flash('Semua tanggal dalam rentang ini sudah memiliki jadwal.', 'info')
+                return redirect(url_for('pengelola_dashboard_faris'))
+            # kalau validasi gagal, buka kembali koneksi untuk render form
+            db_faris = get_db_faris()
+            cur_faris = db_faris.cursor(dictionary=True)
+
+    # GET — tampilkan form
+    cur_faris.execute("SELECT * FROM film_faris WHERE status_faris='tayang' ORDER BY judul_faris")
     films_faris = cur_faris.fetchall()
-    cur_faris.execute("SELECT * FROM teater_faris")
+    cur_faris.execute("SELECT * FROM teater_faris ORDER BY nama_teater_faris")
     teaters_faris = cur_faris.fetchall()
+
+    # Kalender ketersediaan studio (30 hari ke depan) — untuk preview di form
+    hari_ini  = datetime.now().date()
+    batas_max = hari_ini + timedelta(days=MAKS_ADVANCE_HARI)
+    cur_faris.execute("""
+        SELECT j.id_teater_faris, j.tanggal_faris,
+               t.nama_teater_faris, f.judul_faris
+        FROM jadwal_faris j
+        JOIN film_faris  f ON j.id_film_faris   = f.id_film_faris
+        JOIN teater_faris t ON j.id_teater_faris = t.id_teater_faris
+        WHERE j.tanggal_faris BETWEEN %s AND %s
+        GROUP BY j.id_teater_faris, j.tanggal_faris
+        ORDER BY j.tanggal_faris, t.nama_teater_faris
+    """, (hari_ini, batas_max))
+    jadwal_existing = cur_faris.fetchall()
     db_faris.close()
-    
-    return render_template('pengelola/tambah_jadwal_faris.html', 
-                           films_faris=films_faris, 
-                           teaters_faris=teaters_faris)
+
+    return render_template('pengelola/tambah_jadwal_faris.html',
+                           films_faris=films_faris,
+                           teaters_faris=teaters_faris,
+                           jadwal_existing=jadwal_existing,
+                           maks_advance=MAKS_ADVANCE_HARI,
+                           hari_ini=hari_ini.strftime('%Y-%m-%d'),
+                           batas_max=batas_max.strftime('%Y-%m-%d'))
 
 
 # 3. EDIT JADWAL
@@ -1126,7 +1367,7 @@ def pengelola_edit_jadwal_faris(id_jadwal_faris):
                 db_faris.commit()
                 flash('Jadwal berhasil diupdate!', 'success')
                 db_faris.close()
-                return redirect(url_for('pengelola_jadwal_faris'))
+                return redirect(url_for('pengelola_dashboard_faris'))
     
     # GET request - tampilkan form edit
     cur_faris.execute("""
@@ -1165,7 +1406,7 @@ def pengelola_hapus_jadwal_faris(id_jadwal_faris):
         flash('Jadwal tidak bisa dihapus karena sudah ada pemesanan!', 'danger')
     
     db_faris.close()
-    return redirect(url_for('pengelola_jadwal_faris'))
+    return redirect(url_for('pengelola_dashboard_faris'))
 
 @app.route('/pengelola_faris/teater_faris')
 def pengelola_teater_faris():
@@ -1177,6 +1418,73 @@ def pengelola_teater_faris():
     teaters_faris = cur_faris.fetchall()
     db_faris.close()
     return render_template('pengelola/teater_faris.html', teaters_faris=teaters_faris)
+
+@app.route('/pengelola_faris/teater_faris/edit/<int:id_teater_faris>', methods=['GET', 'POST'])
+def pengelola_edit_teater_faris(id_teater_faris):
+    if session.get('role_faris') != 'pengelola':
+        return redirect(url_for('index_faris'))
+    db_faris = get_db_faris()
+    cur_faris = db_faris.cursor(dictionary=True)
+    if request.method == 'POST':
+        nama_faris = request.form['nama_teater_faris']
+        kapasitas_baru = int(request.form['kapasitas_faris'])
+        # Ambil kapasitas lama
+        cur_faris.execute("SELECT kapasitas_faris FROM teater_faris WHERE id_teater_faris=%s", (id_teater_faris,))
+        teater_lama = cur_faris.fetchone()
+        kapasitas_lama = teater_lama['kapasitas_faris'] if teater_lama else 0
+        cur2_faris = db_faris.cursor()
+        cur2_faris.execute(
+            "UPDATE teater_faris SET nama_teater_faris=%s, kapasitas_faris=%s WHERE id_teater_faris=%s",
+            (nama_faris, kapasitas_baru, id_teater_faris)
+        )
+        # Jika kapasitas bertambah, tambah kursi baru
+        if kapasitas_baru > kapasitas_lama:
+            cur_faris.execute("""
+                SELECT kode_kursi_faris FROM kursi_faris 
+                WHERE id_teater_faris=%s 
+                ORDER BY LEFT(kode_kursi_faris,1), CAST(SUBSTRING(kode_kursi_faris,2) AS UNSIGNED)
+            """, (id_teater_faris,))
+            existing = {r['kode_kursi_faris'] for r in cur_faris.fetchall()}
+            huruf_baris = [chr(i) for i in range(ord('A'), ord('Z') + 1)]
+            kursi_dibuat = 0
+            for baris in huruf_baris:
+                for nomor in range(1, 21):
+                    if len(existing) + kursi_dibuat >= kapasitas_baru:
+                        break
+                    kode = f"{baris}{nomor}"
+                    if kode not in existing:
+                        cur2_faris.execute(
+                            "INSERT INTO kursi_faris (id_teater_faris, kode_kursi_faris) VALUES (%s,%s)",
+                            (id_teater_faris, kode)
+                        )
+                        kursi_dibuat += 1
+                if len(existing) + kursi_dibuat >= kapasitas_baru:
+                    break
+        # Jika kapasitas berkurang, hapus kursi yang tidak ada pemesanan (dari belakang)
+        elif kapasitas_baru < kapasitas_lama:
+            cur_faris.execute("""
+                SELECT k.id_kursi_faris, k.kode_kursi_faris FROM kursi_faris k
+                LEFT JOIN detail_pemesanan_faris dp ON k.id_kursi_faris = dp.id_kursi_faris
+                WHERE k.id_teater_faris=%s AND dp.id_kursi_faris IS NULL
+                ORDER BY LEFT(k.kode_kursi_faris,1) DESC, CAST(SUBSTRING(k.kode_kursi_faris,2) AS UNSIGNED) DESC
+            """, (id_teater_faris,))
+            kursi_hapus_kandidat = cur_faris.fetchall()
+            selisih = kapasitas_lama - kapasitas_baru
+            for i, k in enumerate(kursi_hapus_kandidat):
+                if i >= selisih:
+                    break
+                cur2_faris.execute("DELETE FROM kursi_faris WHERE id_kursi_faris=%s", (k['id_kursi_faris'],))
+        db_faris.commit()
+        db_faris.close()
+        flash('Teater berhasil diperbarui!', 'success')
+        return redirect(url_for('pengelola_teater_faris'))
+    cur_faris.execute("SELECT * FROM teater_faris WHERE id_teater_faris=%s", (id_teater_faris,))
+    teater = cur_faris.fetchone()
+    db_faris.close()
+    if not teater:
+        flash('Teater tidak ditemukan!', 'danger')
+        return redirect(url_for('pengelola_teater_faris'))
+    return render_template('pengelola/edit_teater_faris.html', teater=teater)
 
 @app.route('/pengelola_faris/teater_faris/tambah', methods=['GET', 'POST'])
 def pengelola_tambah_teater_faris():
@@ -1213,87 +1521,140 @@ def pengelola_tambah_teater_faris():
     return render_template('pengelola/tambah_teater_faris.html')
 
 @app.route('/pengelola_faris/laporan_keuangan')
+@role_required('pengelola')
 def pengelola_laporan_keuangan_faris():
-    if session.get('role_faris') != 'pengelola':
-        return redirect(url_for('index_faris'))
-    
     db_faris = get_db_faris()
     cur_faris = db_faris.cursor(dictionary=True)
-    
-    # Ambil parameter filter
-    start_date = request.args.get('start_date', '')
-    end_date = request.args.get('end_date', '')
-    periode = request.args.get('periode', '')
-    
-    today = datetime.now().date()
-    periode_text = ""
-    
-    # Set filter berdasarkan periode
+
+    # ── Ambil semua studio untuk dropdown ───────────────────────
+    cur_faris.execute("SELECT id_teater_faris, nama_teater_faris FROM teater_faris ORDER BY nama_teater_faris")
+    semua_studio = cur_faris.fetchall()
+
+    # ── Parameter filter ─────────────────────────────────────────
+    id_studio   = request.args.get('id_studio', '')      # '' = semua studio
+    start_date  = request.args.get('start_date', '')
+    end_date    = request.args.get('end_date', '')
+    periode     = request.args.get('periode', '')
+    today       = datetime.now().date()
+
+    # Shortcut periode
     if periode == 'hari':
-        start_date = today.strftime('%Y-%m-%d')
-        end_date = today.strftime('%Y-%m-%d')
-        periode_text = f"Hari ini, {today.strftime('%d %B %Y')}"
+        start_date = end_date = today.strftime('%Y-%m-%d')
     elif periode == 'bulan':
         start_date = today.replace(day=1).strftime('%Y-%m-%d')
-        end_date = today.strftime('%Y-%m-%d')
-        periode_text = f"Bulan {today.strftime('%B %Y')}"
+        end_date   = today.strftime('%Y-%m-%d')
     elif periode == 'tahun':
         start_date = today.replace(month=1, day=1).strftime('%Y-%m-%d')
-        end_date = today.strftime('%Y-%m-%d')
-        periode_text = f"Tahun {today.strftime('%Y')}"
-    elif start_date and end_date:
-        # Filter custom tanggal
-        start_obj = datetime.strptime(start_date, '%Y-%m-%d').date()
-        end_obj = datetime.strptime(end_date, '%Y-%m-%d').date()
-        
-        if start_obj == end_obj:
-            periode_text = f"{start_obj.strftime('%d %B %Y')}"
-        elif start_obj.month == end_obj.month and start_obj.year == end_obj.year:
-            periode_text = f"{start_obj.strftime('%d')} - {end_obj.strftime('%d %B %Y')}"
-        elif start_obj.year == end_obj.year:
-            periode_text = f"{start_obj.strftime('%d %B')} - {end_obj.strftime('%d %B %Y')}"
-        else:
-            periode_text = f"{start_obj.strftime('%d %B %Y')} - {end_obj.strftime('%d %B %Y')}"
-    else:
-        # Semua data
-        periode_text = "Semua Data"
-    
-    # Query laporan dengan filter tanggal
-    query = """
-        SELECT p.created_at_faris, p.total_harga_faris, u.nama_faris, 
-               f.judul_faris, t.nama_teater_faris
-        FROM pemesanan_faris p
-        JOIN user_faris u ON p.id_user_faris = u.id_user_faris
-        JOIN jadwal_faris j ON p.id_jadwal_faris = j.id_jadwal_faris
-        JOIN film_faris f ON j.id_film_faris = f.id_film_faris
-        JOIN teater_faris t ON j.id_teater_faris = t.id_teater_faris
-        WHERE p.status_bayar_faris = 'lunas'
-    """
-    params = []
-    
+        end_date   = today.strftime('%Y-%m-%d')
+
+    # Label periode
     if start_date and end_date:
-        query += " AND DATE(p.created_at_faris) BETWEEN %s AND %s"
-        params = [start_date, end_date]
-    
-    query += " ORDER BY p.created_at_faris DESC"
-    
-    cur_faris.execute(query, params)
+        s = datetime.strptime(start_date, '%Y-%m-%d').date()
+        e = datetime.strptime(end_date,   '%Y-%m-%d').date()
+        if s == e:
+            periode_text = s.strftime('%d %B %Y')
+        elif s.year == e.year:
+            periode_text = f"{s.strftime('%d %B')} – {e.strftime('%d %B %Y')}"
+        else:
+            periode_text = f"{s.strftime('%d %B %Y')} – {e.strftime('%d %B %Y')}"
+    else:
+        periode_text = "Semua Data"
+
+    # Label studio
+    studio_text = "Semua Studio"
+    if id_studio:
+        for s in semua_studio:
+            if str(s['id_teater_faris']) == str(id_studio):
+                studio_text = s['nama_teater_faris']
+                break
+
+    # ── Bangun WHERE clause ───────────────────────────────────────
+    where_parts = ["p.status_bayar_faris = 'lunas'"]
+    params: list = []
+    if id_studio:
+        where_parts.append("j.id_teater_faris = %s")
+        params.append(id_studio)
+    if start_date and end_date:
+        where_parts.append("DATE(p.created_at_faris) BETWEEN %s AND %s")
+        params += [start_date, end_date]
+    where_sql = "WHERE " + " AND ".join(where_parts)
+
+    # ── A. Summary card: total pendapatan studio yang dipilih ────
+    cur_faris.execute(f"""
+        SELECT
+            t.id_teater_faris,
+            t.nama_teater_faris,
+            COUNT(DISTINCT p.id_pemesanan_faris) AS jml_transaksi,
+            COALESCE(SUM(p.total_harga_faris), 0) AS total_pendapatan
+        FROM pemesanan_faris p
+        JOIN jadwal_faris j ON p.id_jadwal_faris = j.id_jadwal_faris
+        JOIN teater_faris t ON j.id_teater_faris  = t.id_teater_faris
+        {where_sql}
+        GROUP BY t.id_teater_faris
+        ORDER BY t.nama_teater_faris
+    """, params)
+    rekap_studio = cur_faris.fetchall()
+
+    # ── B. Rincian per hari (untuk studio terpilih) ───────────────
+    cur_faris.execute(f"""
+        SELECT
+            DATE(j.tanggal_faris)                    AS tgl_tayang,
+            t.nama_teater_faris,
+            f.judul_faris,
+            COUNT(DISTINCT p.id_pemesanan_faris)     AS jml_transaksi,
+            COALESCE(SUM(p.total_harga_faris), 0)    AS pendapatan
+        FROM pemesanan_faris p
+        JOIN jadwal_faris j ON p.id_jadwal_faris = j.id_jadwal_faris
+        JOIN film_faris   f ON j.id_film_faris    = f.id_film_faris
+        JOIN teater_faris t ON j.id_teater_faris  = t.id_teater_faris
+        {where_sql}
+        GROUP BY tgl_tayang, t.id_teater_faris, f.id_film_faris
+        ORDER BY tgl_tayang DESC, t.nama_teater_faris
+    """, params)
+    ringkasan_faris = cur_faris.fetchall()
+
+    # ── C. Detail transaksi ───────────────────────────────────────
+    cur_faris.execute(f"""
+        SELECT
+            p.id_pemesanan_faris,
+            p.created_at_faris,
+            p.total_harga_faris,
+            u.nama_faris,
+            f.judul_faris,
+            t.nama_teater_faris,
+            DATE(j.tanggal_faris)  AS tgl_tayang,
+            j.jam_tayang_faris,
+            GROUP_CONCAT(k.kode_kursi_faris ORDER BY k.kode_kursi_faris SEPARATOR ', ') AS kursi
+        FROM pemesanan_faris p
+        JOIN user_faris   u  ON p.id_user_faris   = u.id_user_faris
+        JOIN jadwal_faris j  ON p.id_jadwal_faris  = j.id_jadwal_faris
+        JOIN film_faris   f  ON j.id_film_faris    = f.id_film_faris
+        JOIN teater_faris t  ON j.id_teater_faris  = t.id_teater_faris
+        LEFT JOIN detail_pemesanan_faris dp ON dp.id_pemesanan_faris = p.id_pemesanan_faris
+        LEFT JOIN kursi_faris k ON dp.id_kursi_faris = k.id_kursi_faris
+        {where_sql}
+        GROUP BY p.id_pemesanan_faris
+        ORDER BY p.created_at_faris DESC
+    """, params)
     laporan_faris = cur_faris.fetchall()
-    
-    # Hitung grand total
-    grand_total = sum([l['total_harga_faris'] for l in laporan_faris]) if laporan_faris else 0
-    
-    now_date = datetime.now().strftime('%d %B %Y %H:%M:%S')
-    
+
+    grand_total = sum(r['total_pendapatan'] for r in rekap_studio) if rekap_studio else 0
+    now_date    = datetime.now().strftime('%d %B %Y %H:%M')
     db_faris.close()
-    
-    return render_template('pengelola/laporan_keuangan_faris.html', 
+
+    return render_template('pengelola/laporan_keuangan_faris.html',
+                           semua_studio=semua_studio,
+                           rekap_studio=rekap_studio,
+                           ringkasan_faris=ringkasan_faris,
                            laporan_faris=laporan_faris,
                            grand_total=grand_total,
+                           id_studio=id_studio,
+                           studio_text=studio_text,
                            start_date=start_date,
                            end_date=end_date,
                            periode_text=periode_text,
                            now_date=now_date)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
