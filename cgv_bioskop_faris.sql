@@ -592,6 +592,7 @@ ALTER TABLE `film_faris`
 
 ALTER TABLE `jadwal_faris`
   ADD PRIMARY KEY (`id_jadwal_faris`),
+  ADD UNIQUE KEY `uq_studio_tgl_jam` (`id_teater_faris`,`tanggal_faris`,`jam_tayang_faris`),
   ADD KEY `id_film_faris` (`id_film_faris`),
   ADD KEY `id_teater_faris` (`id_teater_faris`);
 
