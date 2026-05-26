@@ -29,7 +29,7 @@ CREATE TABLE `film_faris` (
   `sinopsis_faris` text DEFAULT NULL,
   `poster_faris` varchar(255) DEFAULT NULL,
   `trailer_url_faris` varchar(255) DEFAULT NULL COMMENT 'YouTube embed ID, contoh: dQw4w9WgXcQ',
-  `status_faris` enum('tayang','tidak') DEFAULT 'tayang'
+  `status_faris` enum('tayang','tidak','coming_soon') DEFAULT 'tayang'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -651,3 +651,7 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+-- Migration: Add coming_soon status to film_faris
+ALTER TABLE `film_faris` MODIFY `status_faris` enum('tayang','tidak','coming_soon') DEFAULT 'tayang';
+-- Run this on your existing database if upgrading from an older version

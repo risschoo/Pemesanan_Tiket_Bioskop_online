@@ -56,9 +56,11 @@
         <div class="form-group">
             <label>Status</label>
             <select name="status_faris">
-                <option value="tayang" {{ 'selected' if film_faris['status_faris']=='tayang' }}>Tayang</option>
-                <option value="tidak" {{ 'selected' if film_faris['status_faris']=='tidak' }}>Tidak Tayang</option>
+                <option value="tayang" {{ 'selected' if film_faris['status_faris']=='tayang' }}>🎬 Tayang</option>
+                <option value="coming_soon" {{ 'selected' if film_faris['status_faris']=='coming_soon' }}>🕐 Coming Soon</option>
+                <option value="tidak" {{ 'selected' if film_faris['status_faris']=='tidak' }}>❌ Tidak Tayang</option>
             </select>
+            <small style="color:#888; font-size:12px;">💡 <strong>Coming Soon</strong> = tampil di beranda bagian segera tayang.</small>
         </div>
         <button type="submit" class="btn-submit">Simpan Perubahan</button>
         <a href="{{ url_for('admin_film_faris') }}"

@@ -61,7 +61,7 @@
             <input type="text" name="q_faris" placeholder="Cari judul film..."
                 value="{{ keyword_faris }}" autocomplete="off">
             <button type="submit">Cari</button>
-            {% if keyword_faris or genre_filter or studio_filter %}
+            {% if keyword_faris or genre_filter or studio_filter or film_filter %}
             <a href="{{ url_for('index_faris') }}" class="btn-reset" title="Reset semua filter">
                 <i class="fa-solid fa-xmark"></i>
             </a>
@@ -90,7 +90,21 @@
                     {% endfor %}
                 </select>
             </div>
-            {% if genre_filter or studio_filter %}
+            {% if film_list_faris %}
+            <div class="filter-item">
+                <i class="fa-solid fa-film"></i>
+                <select name="film" onchange="document.getElementById('filter-form').submit()">
+                    <option value="">Semua Film</option>
+                    {% for f in film_list_faris %}
+                    <option value="{{ f['id_film_faris'] }}"
+                        {% if film_filter|string == f['id_film_faris']|string %}selected{% endif %}>
+                        {{ f['judul_faris'] }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            {% if genre_filter or studio_filter or film_filter %}
             <div class="filter-aktif">
                 <i class="fa-solid fa-filter"></i>
                 Filter aktif:
@@ -99,6 +113,13 @@
                     {% for s in studios_faris %}
                         {% if studio_filter|string == s['id_teater_faris']|string %}
                         <span class="filter-tag">{{ s['nama_teater_faris'] }}</span>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                {% if film_filter %}
+                    {% for f in film_list_faris %}
+                        {% if film_filter|string == f['id_film_faris']|string %}
+                        <span class="filter-tag">{{ f['judul_faris'] }}</span>
                         {% endif %}
                     {% endfor %}
                 {% endif %}
@@ -159,7 +180,7 @@
 </style>
 
 <div class="section-title">
-    {% if keyword_faris or genre_filter or studio_filter %}
+    {% if keyword_faris or genre_filter or studio_filter or film_filter %}
     <h2><i class="fa-solid fa-filter"></i> Hasil Filter
         <span style="font-size:14px; color:#999; font-weight:normal;">— {{ films_faris|length }} film ditemukan</span>
     </h2>
@@ -542,7 +563,7 @@ if (totalSlides > 0) {
         }, 200);
     });
 
-    // Init
+// Init
     buildClones();
     setTimeout(function() {
         goTo(0, false);
@@ -550,4 +571,149 @@ if (totalSlides > 0) {
     }, 50);
 })();
 </script>
+
+{% if coming_soon_films %}
+<!-- ==================== COMING SOON SECTION ==================== -->
+<style>
+.coming-soon-section { margin-top: 40px; }
+.coming-soon-section .section-title h2 { color: #f0a500; }
+.cs-card {
+    background: linear-gradient(145deg, #1a1a2e, #16213e);
+    border: 1px solid rgba(240,165,0,0.25);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    position: relative;
+}
+.cs-card:hover { transform: translateY(-4px); box-shadow: 0 8px 28px rgba(240,165,0,0.18); }
+.cs-poster { position: relative; aspect-ratio: 2/3; overflow: hidden; }
+.cs-poster img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cs-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.85) 100%);
+}
+.cs-badge {
+    position: absolute; top: 10px; left: 10px;
+    background: linear-gradient(135deg, #f0a500, #e67e00);
+    color: #fff; font-size: 0.72em; font-weight: 700;
+    padding: 4px 10px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 5px;
+}
+.cs-date-label {
+    position: absolute; bottom: 10px; left: 0; right: 0;
+    text-align: center; color: #f0a500;
+    font-size: 0.78em; font-weight: 600;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+.cs-info { padding: 12px; }
+.cs-info h3 { font-size: 0.92em; font-weight: 700; color: #fff; margin: 0 0 4px; line-height: 1.3; }
+.cs-info .cs-genre { font-size: 0.78em; color: #aaa; display: flex; align-items: center; gap: 5px; }
+.cs-info .cs-genre i { color: #f0a500; }
+.cs-info .cs-meta { font-size: 0.76em; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 5px; }
+.coming-soon-slider-wrapper { position: relative; padding: 0 24px; }
+.coming-soon-track-outer { overflow: hidden; }
+.coming-soon-track {
+    display: flex;
+    gap: 20px;
+    transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.coming-soon-track .cs-card {
+    flex: 0 0 calc(25% - 15px);
+    min-width: 160px;
+}
+@media (max-width: 1200px) { .coming-soon-track .cs-card { flex: 0 0 calc(33.33% - 14px); } }
+@media (max-width: 900px)  { .coming-soon-track .cs-card { flex: 0 0 calc(50% - 10px); } }
+@media (max-width: 600px)  { .coming-soon-track .cs-card { flex: 0 0 calc(100%); } }
+.cs-slider-btn {
+    position: absolute; top: 40%; transform: translateY(-50%);
+    background: rgba(240,165,0,0.9); color: #fff; border: none;
+    width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
+    font-size: 14px; z-index: 10; display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+}
+.cs-slider-btn:hover { background: #f0a500; }
+.cs-slider-btn.prev { left: -4px; }
+.cs-slider-btn.next { right: -4px; }
+</style>
+
+<div class="coming-soon-section">
+    <div class="section-title">
+        <h2 style="color:#f0a500;"><i class="fa-regular fa-clock"></i> Segera Tayang
+            <span style="font-size:14px; color:#c8860a; font-weight:normal; margin-left:8px;">{{ coming_soon_films|length }} film</span>
+        </h2>
+    </div>
+
+    <div class="coming-soon-slider-wrapper">
+        <button class="cs-slider-btn prev" id="csPrev"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="coming-soon-track-outer">
+            <div class="coming-soon-track" id="csTrack">
+                {% for film in coming_soon_films %}
+                <div class="cs-card">
+                    <div class="cs-poster">
+                        {% if film['poster_faris'] and (film['poster_faris'].startswith('http://') or film['poster_faris'].startswith('https://')) %}
+                        <img src="{{ film['poster_faris'] }}" alt="{{ film['judul_faris'] }}"
+                            onerror="this.src='https://placehold.co/200x300/1a1a2e/f0a500?text=Coming+Soon'">
+                        {% else %}
+                        <img src="{{ url_for('static', filename='img/' + (film['poster_faris'] or 'default.jpg')) }}"
+                            alt="{{ film['judul_faris'] }}"
+                            onerror="this.src='https://placehold.co/200x300/1a1a2e/f0a500?text=Coming+Soon'">
+                        {% endif %}
+                        <div class="cs-overlay"></div>
+                        <div class="cs-badge"><i class="fa-regular fa-clock"></i> Segera</div>
+                        {% if film['tanggal_rilis_faris'] %}
+                        <div class="cs-date-label">
+                            <i class="fa-regular fa-calendar"></i>
+                            {{ film['tanggal_rilis_faris'].strftime('%d %b %Y') }}
+                        </div>
+                        {% else %}
+                        <div class="cs-date-label"><i class="fa-regular fa-calendar"></i> Segera Tayang</div>
+                        {% endif %}
+                    </div>
+                    <div class="cs-info">
+                        <h3>{{ film['judul_faris'] }}</h3>
+                        <p class="cs-genre"><i class="fa-solid fa-masks-theater"></i> {{ film['genre_faris'] or 'Film' }}</p>
+                        <p class="cs-meta"><i class="fa-regular fa-clock"></i> {{ film['durasi_faris'] }} menit</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <button class="cs-slider-btn next" id="csNext"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+</div>
+
+<script>
+(function() {
+    var track = document.getElementById('csTrack');
+    var btnPrev = document.getElementById('csPrev');
+    var btnNext = document.getElementById('csNext');
+    if (!track) return;
+    var cards = Array.from(track.querySelectorAll('.cs-card'));
+    var total = cards.length;
+    var currentOffset = 0;
+    function getPerView() {
+        var w = window.innerWidth;
+        if (w <= 600) return 1;
+        if (w <= 900) return 2;
+        if (w <= 1200) return 3;
+        return 4;
+    }
+    function getCardWidth() {
+        if (!cards[0]) return 0;
+        return cards[0].offsetWidth + 20;
+    }
+    function maxOffset() { return Math.max(0, total - getPerView()); }
+    function goTo(offset) {
+        currentOffset = Math.max(0, Math.min(offset, maxOffset()));
+        track.style.transform = 'translateX(-' + (currentOffset * getCardWidth()) + 'px)';
+    }
+    if (btnNext) btnNext.addEventListener('click', function() { goTo(currentOffset + 1); });
+    if (btnPrev) btnPrev.addEventListener('click', function() { goTo(currentOffset - 1); });
+    window.addEventListener('resize', function() { goTo(currentOffset); });
+    goTo(0);
+})();
+</script>
+{% endif %}
+
 {% endblock %}

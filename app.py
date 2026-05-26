@@ -12,8 +12,7 @@ import requests
 import base64
 import json
 
-# ── [POIN 3] Load konfigurasi dari file aman, bukan hardcode ─────
-import config_loader  # noqa: F401 — side-effect: os.environ terisi
+import config_loader 
 
 def _cfg(key, default=None):
     return os.environ.get(key, default)
@@ -28,17 +27,16 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER_FARIS
 if not os.path.exists(UPLOAD_FOLDER_FARIS):
     os.makedirs(UPLOAD_FOLDER_FARIS)
 
-# ── Konfigurasi Midtrans (dibaca dari config.env) ────────────────
+#server key midtrans
 MIDTRANS_SERVER_KEY   = _cfg('MIDTRANS_SERVER_KEY',   'Mid-server-gMZxTVNEDZE4fbHnaz9qYv9T')
 MIDTRANS_CLIENT_KEY   = _cfg('MIDTRANS_CLIENT_KEY',   'Mid-client-PvwImZjz6-_b08sv')
 MIDTRANS_MERCHANT_ID  = _cfg('MIDTRANS_MERCHANT_ID',  'M670785059')
 MIDTRANS_IS_PRODUCTION = _cfg('MIDTRANS_IS_PRODUCTION', 'False').lower() == 'true'
 
-# ── Batas waktu pembayaran (menit) ───────────────────────────────
+#Batas Waktu Pembayaran
 PAYMENT_EXPIRE_MINUTES = int(_cfg('PAYMENT_EXPIRE_MINUTES', 15))
 
-# Jendela tampil jadwal ke pelanggan: jadwal hanya muncul jika
-# tanggal tayang <= hari ini + WINDOW_TAMPIL_HARI (Coming Soon protection)
+# Coming Soon
 WINDOW_TAMPIL_HARI = 4
 
 snap = midtransclient.Snap(
@@ -53,9 +51,7 @@ core = midtransclient.CoreApi(
     client_key=MIDTRANS_CLIENT_KEY
 )
 
-# ════════════════════════════════════════════════════════════════
-#  [POIN 5] DECORATOR MIDDLEWARE — Validasi Hak Akses
-# ════════════════════════════════════════════════════════════════
+#Validasi Hak akses
 
 def login_required(f):
     """Pastikan user sudah login (role apapun)."""
@@ -180,9 +176,7 @@ def update_status_jadwal(id_jadwal_faris):
     db_faris.commit()
     db_faris.close()
 
-# ════════════════════════════════════════════════════════════════
-#  [POIN 2] EXPIRE PEMBAYARAN OTOMATIS — Lepas kursi yang expired
-# ════════════════════════════════════════════════════════════════
+#Lepas Kursi yang Expired
 
 def expire_pending_payments():
     """
@@ -261,11 +255,11 @@ def index_faris():
     keyword_faris = request.args.get('q_faris', '').strip()
     genre_filter  = request.args.get('genre', '').strip()
     studio_filter = request.args.get('studio', '').strip()
+    film_filter   = request.args.get('film', '').strip()
 
     db_faris = get_db_faris()
     cur_faris = db_faris.cursor(dictionary=True)
 
-    # COMING SOON PROTECTION:
     # Film hanya tampil ke pelanggan jika punya jadwal dalam window WINDOW_TAMPIL_HARI hari ke depan.
     # Jadwal yang lebih dari 4 hari ke depan disembunyikan sampai waktunya tiba.
     hari_ini_idx = datetime.now().date()
@@ -288,6 +282,10 @@ def index_faris():
     if studio_filter:
         where_parts.append("j.id_teater_faris = %(studio)s")
         params['studio'] = studio_filter
+
+    if film_filter:
+        where_parts.append("f.id_film_faris = %(film_id)s")
+        params['film_id'] = film_filter
 
     where_sql = "WHERE " + " AND ".join(where_parts)
 
@@ -320,14 +318,87 @@ def index_faris():
     """, (hari_ini_idx, batas_tampil))
     studios_faris = cur_faris.fetchall()
 
+    cs_where_parts = []
+    cs_params_list = []
+
+    cs_keyword_clause = ""
+    cs_genre_clause = ""
+    cs_studio_clause = ""
+    cs_film_clause = ""
+    cs_extra_params = []
+
+    if keyword_faris:
+        cs_keyword_clause = "AND (f.judul_faris LIKE %s OR f.genre_faris LIKE %s)"
+        cs_extra_params += [f'%{keyword_faris}%', f'%{keyword_faris}%']
+    if genre_filter:
+        cs_genre_clause = "AND f.genre_faris LIKE %s"
+        cs_extra_params.append(f'%{genre_filter}%')
+    if film_filter:
+        cs_film_clause = "AND f.id_film_faris = %s"
+        cs_extra_params.append(film_filter)
+
+    cs_studio_join = ""
+    cs_studio_where = ""
+    if studio_filter:
+        cs_studio_join = "JOIN jadwal_faris jsf ON f.id_film_faris = jsf.id_film_faris"
+        cs_studio_where = "AND jsf.id_teater_faris = %s AND jsf.tanggal_faris > %s"
+        cs_extra_params_studio = [studio_filter, batas_tampil]
+    else:
+        cs_extra_params_studio = []
+
+    cur_faris.execute(f"""
+        SELECT DISTINCT f.*, MIN(j2.tanggal_faris) AS tanggal_rilis_faris
+        FROM film_faris f
+        LEFT JOIN jadwal_faris j2 ON f.id_film_faris = j2.id_film_faris
+                                  AND j2.tanggal_faris > %s
+        {cs_studio_join}
+        WHERE (
+            f.status_faris = 'coming_soon'
+            OR (
+                f.status_faris = 'tayang'
+                AND EXISTS (
+                    SELECT 1 FROM jadwal_faris jcs
+                    WHERE jcs.id_film_faris = f.id_film_faris
+                      AND jcs.tanggal_faris > %s
+                )
+                AND NOT EXISTS (
+                    SELECT 1 FROM jadwal_faris jnow
+                    WHERE jnow.id_film_faris = f.id_film_faris
+                      AND jnow.tanggal_faris BETWEEN %s AND %s
+                )
+            )
+        )
+        {cs_keyword_clause}
+        {cs_genre_clause}
+        {cs_film_clause}
+        {cs_studio_where}
+        GROUP BY f.id_film_faris
+        ORDER BY tanggal_rilis_faris ASC, f.id_film_faris DESC
+    """, [batas_tampil, batas_tampil, hari_ini_idx, batas_tampil] + cs_extra_params + cs_extra_params_studio)
+    coming_soon_films = cur_faris.fetchall()
+
+    # ── ALL TAYANG FILMS for film dropdown (no filter) ─────────────────────────
+    cur_faris.execute("""
+        SELECT DISTINCT f.id_film_faris, f.judul_faris
+        FROM film_faris f
+        JOIN jadwal_faris j ON f.id_film_faris = j.id_film_faris
+        WHERE f.status_faris = 'tayang'
+          AND j.tanggal_faris BETWEEN %s AND %s
+        ORDER BY f.judul_faris
+    """, (hari_ini_idx, batas_tampil))
+    film_list_faris = cur_faris.fetchall()
+
     db_faris.close()
     return render_template('index_faris.html',
                            films_faris=films_faris,
                            keyword_faris=keyword_faris,
                            genre_filter=genre_filter,
                            studio_filter=studio_filter,
+                           film_filter=film_filter,
                            genres_faris=genres_faris,
-                           studios_faris=studios_faris)
+                           studios_faris=studios_faris,
+                           coming_soon_films=coming_soon_films,
+                           film_list_faris=film_list_faris)
 
 @app.route('/register_faris', methods=['GET', 'POST'])
 def register_faris():
@@ -402,8 +473,6 @@ def detail_film_faris(id_film_faris):
     hari_ini_faris = datetime.now().date()
     batas_faris    = hari_ini_faris + timedelta(days=WINDOW_TAMPIL_HARI)
 
-    # COMING SOON PROTECTION: cek apakah film ini punya jadwal dalam window tampil.
-    # Jika semua jadwalnya masih > WINDOW_TAMPIL_HARI hari ke depan, tolak akses.
     cur_faris.execute("""
         SELECT COUNT(*) AS ada
         FROM jadwal_faris
@@ -449,7 +518,7 @@ def detail_film_faris(id_film_faris):
 @app.route('/pilih_kursi_faris/<int:id_jadwal_faris>')
 @pengguna_required
 def pilih_kursi_faris(id_jadwal_faris):
-    # [POIN 2] Bersihkan transaksi expired sebelum tampilkan kursi
+    # Bersihkan transaksi expired sebelum tampilkan kursi
     expire_pending_payments()
 
     db_faris = get_db_faris()
@@ -478,7 +547,7 @@ def pilih_kursi_faris(id_jadwal_faris):
     """, (jadwal_faris['id_teater_faris'],))
     semua_kursi_faris = cur_faris.fetchall()
 
-    # [POIN 1 & 2] Kursi terkunci = lunas ATAU pending yang belum expired
+    # Kursi terkunci = lunas ATAU pending yang belum expired
     batas_pending = datetime.now() - timedelta(minutes=PAYMENT_EXPIRE_MINUTES)
     cur_faris.execute("""
         SELECT DISTINCT dp.id_kursi_faris
@@ -535,7 +604,7 @@ def pesan_faris():
     cur_faris = db_faris.cursor(dictionary=True)
 
     try:
-        # ── [POIN 1] DOUBLE-BOOKING GUARD — Transaksi SERIALIZABLE ──────
+        # cegah double booking dengan kunci baris jadwal yg dipilih
         db_faris.start_transaction(isolation_level='SERIALIZABLE')
 
         cur_faris.execute("""
@@ -969,11 +1038,12 @@ def admin_tambah_film_faris():
         sinopsis_faris = request.form['sinopsis_faris']
         poster_faris = request.form.get('poster_faris', 'default.jpg')
         trailer_url_faris = request.form.get('trailer_url_faris', '').strip()
+        status_faris = request.form.get('status_faris', 'tayang')
         db_faris = get_db_faris()
         cur_faris = db_faris.cursor()
         cur_faris.execute(
-            "INSERT INTO film_faris (judul_faris, genre_faris, durasi_faris, rating_faris, sinopsis_faris, poster_faris, trailer_url_faris) VALUES (%s,%s,%s,%s,%s,%s,%s)",
-            (judul_faris, genre_faris, durasi_faris, rating_faris, sinopsis_faris, poster_faris, trailer_url_faris)
+            "INSERT INTO film_faris (judul_faris, genre_faris, durasi_faris, rating_faris, sinopsis_faris, poster_faris, trailer_url_faris, status_faris) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
+            (judul_faris, genre_faris, durasi_faris, rating_faris, sinopsis_faris, poster_faris, trailer_url_faris, status_faris)
         )
         db_faris.commit()
         db_faris.close()

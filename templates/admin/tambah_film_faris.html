@@ -46,6 +46,15 @@
             <label>YouTube Trailer ID</label>
             <input type="text" name="trailer_url_faris" placeholder="Contoh: dQw4w9WgXcQ">
         </div>
+        <div class="form-group">
+            <label>Status Film</label>
+            <select name="status_faris">
+                <option value="tayang">🎬 Tayang</option>
+                <option value="coming_soon">🕐 Coming Soon</option>
+                <option value="tidak">❌ Tidak Tayang</option>
+            </select>
+            <small style="color:#888; font-size:12px;">💡 Pilih <strong>Coming Soon</strong> agar film tampil di bagian segera tayang di beranda.</small>
+        </div>
         <button type="submit" class="btn-submit">Simpan Film</button>
         <a href="{{ url_for('admin_film_faris') }}"
             style="display:block; text-align:center; margin-top:12px; color:#cc0000; font-size:13px;">
